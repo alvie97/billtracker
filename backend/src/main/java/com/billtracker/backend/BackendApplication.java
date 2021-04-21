@@ -18,14 +18,21 @@ public class BackendApplication {
         SpringApplication.run(BackendApplication.class, args);
     }
 
+/*
     @Bean
     public CommandLineRunner demo(ExpenseRepository repository) {
         return (args) -> {
-            repository.save(new Expense("Servicio Agua", "Agua", 500.00, new Date()));
-            repository.save(new Expense("Servicio Gas", "Gas", 500.00, new Date()));
-            repository.save(new Expense("Servicio Luz", "Luz", 500.00, new Date()));
-            repository.save(new Expense("Internet", "Fibertel te odio", 3000.00, new Date()));
-            repository.save(new Expense("Empanadas", "Ale traeme unas empanadas vale", 1000.00, new Date()));
+            repository.save(new Expense("Servicio Agua", "Agua", 500.00, new
+            Date()));
+            repository.save(new Expense("Servicio Gas", "Gas", 500.00, new
+            Date()));
+            repository.save(new Expense("Servicio Luz", "Luz", 500.00, new
+            Date()));
+            repository.save(new Expense("Internet", "Fibertel te odio", 3000
+            .00, new Date()));
+            repository.save(new Expense("Empanadas", "Ale traeme unas
+            empanadas vale", 1000.00, new Date()));
         };
     }
+*/
 }
