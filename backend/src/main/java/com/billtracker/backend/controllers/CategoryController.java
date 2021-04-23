@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -36,7 +37,9 @@ public class CategoryController {
                 .map(category -> category.add(linkTo(methodOn(CategoryController.class)
                                                            .getCategory(category.getId()))
                                                     .withSelfRel())).collect(
-                Collectors.toList());
+                Collectors.toSet());
+
+        log.info(categories.toString());
 
         return CollectionModel.of(categories,
                                   linkTo(methodOn(CategoryController.class).getAllCategories())

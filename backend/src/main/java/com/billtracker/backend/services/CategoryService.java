@@ -7,13 +7,16 @@ import com.billtracker.backend.entities.ExpenseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.*;
 
 
 @Service
 public class CategoryService {
     @Autowired
     CategoryRepository categoryRepository;
+
+    @Autowired
+    ExpenseRepository expenseRepository;
 
     public Category findById(Long id) {
         return categoryRepository.findById(id).get();
@@ -29,5 +32,9 @@ public class CategoryService {
 
     public void delete(Long id) {
         categoryRepository.deleteById(id);
+    }
+
+    public Set<Expense> findExpensesById(Long id) {
+        return expenseRepository.findExpensesByCategoryId(id);
     }
 }

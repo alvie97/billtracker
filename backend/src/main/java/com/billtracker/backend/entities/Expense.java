@@ -5,11 +5,10 @@ import lombok.NoArgsConstructor;
 import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.server.core.Relation;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @Entity
@@ -28,6 +27,9 @@ public class Expense extends RepresentationModel {
     private Double expense;
 
     private Date date;
+
+    @ManyToMany(mappedBy = "expenses")
+    private Set<Category> categories = new HashSet<>();
 
     public Expense(String name,
                    String description,
