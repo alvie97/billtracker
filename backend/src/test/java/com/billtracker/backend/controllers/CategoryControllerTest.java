@@ -3,13 +3,18 @@ package com.billtracker.backend.controllers;
 import com.billtracker.backend.entities.Category;
 import com.billtracker.backend.entities.Expense;
 import com.billtracker.backend.services.CategoryService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
@@ -33,8 +38,15 @@ class CategoryControllerTest {
     private List<Category> categories;
     private List<Expense> expenses;
 
+    private static ObjectWriter ow;
+
+    @BeforeAll
+    public static void setup() {
+        ow = new ObjectMapper().writer();
+    }
+
     @BeforeEach
-    public void setup() {
+    public void init() {
         this.category = new Category("Groceries");
         this.category.setId(1L);
         this.expenses = new ArrayList<>();
@@ -102,7 +114,7 @@ class CategoryControllerTest {
     }
 
     @Test
-    public void getCategory() throws Exception {
+    public void getCategoryTest() throws Exception {
         when(categoryService.findById(this.category.getId()))
                 .thenReturn(this.category);
 
@@ -117,4 +129,25 @@ class CategoryControllerTest {
         verify(categoryService, times(1)).findById(this.category.getId());
     }
 
+    @Test
+    public void addCategoryTest() throws Exception {
+        when(categoryService.save(any(Category.class))).thenReturn(this.category);
+
+        MockHttpServletRequestBuilder builder =
+                MockMvcRequestBuilders.post("/api/categories")
+                                      .contentType(MediaType.APPLICATION_JSON)
+                                      .accept(MediaType.APPLICATION_JSON)
+                                    .characterEncoding("UTF-8")
+                                      .content(String.format("{\"tag\": \"%s\"}", this.category.getTag()));
+
+        mockMvc.perform(builder)
+               .andExpect(MockMvcResultMatchers.status().isOk())
+               .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(this.category.getId()))
+               .andExpect(MockMvcResultMatchers.jsonPath("$.tag").value(this.category.getTag()))
+               .andExpect(MockMvcResultMatchers.jsonPath("$.created_on")
+                                               .value(this.category.getCreatedOn().toString()))
+               .andExpect(MockMvcResultMatchers.jsonPath("$.deleted_on").isEmpty());
+
+        verify(categoryService, times(1)).save(any(Category.class));
+    }
 }
