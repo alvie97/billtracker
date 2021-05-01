@@ -19,7 +19,7 @@ public class CategoryService {
     ExpenseRepository expenseRepository;
 
     public Category findById(Long id) {
-        return categoryRepository.findById(id).get();
+        return categoryRepository.findById(id).orElse(null);
     }
 
     public List<Category> findAll() {

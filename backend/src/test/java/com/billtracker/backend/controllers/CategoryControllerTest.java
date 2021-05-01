@@ -137,7 +137,29 @@ class CategoryControllerTest {
                 MockMvcRequestBuilders.post("/api/categories")
                                       .contentType(MediaType.APPLICATION_JSON)
                                       .accept(MediaType.APPLICATION_JSON)
-                                    .characterEncoding("UTF-8")
+                                      .characterEncoding("UTF-8")
+                                      .content(String.format("{\"tag\": \"%s\"}", this.category.getTag()));
+
+        mockMvc.perform(builder)
+               .andExpect(MockMvcResultMatchers.status().isOk())
+               .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(this.category.getId()))
+               .andExpect(MockMvcResultMatchers.jsonPath("$.tag").value(this.category.getTag()))
+               .andExpect(MockMvcResultMatchers.jsonPath("$.created_on")
+                                               .value(this.category.getCreatedOn().toString()))
+               .andExpect(MockMvcResultMatchers.jsonPath("$.deleted_on").isEmpty());
+
+        verify(categoryService, times(1)).save(any(Category.class));
+    }
+
+    @Test
+    public void updateCategoryTest() throws Exception {
+        when(categoryService.save(any(Category.class))).thenReturn(null);
+
+        MockHttpServletRequestBuilder builder =
+                MockMvcRequestBuilders.post("/api/categories/" + this.category.getId())
+                                      .contentType(MediaType.APPLICATION_JSON)
+                                      .accept(MediaType.APPLICATION_JSON)
+                                      .characterEncoding("UTF-8")
                                       .content(String.format("{\"tag\": \"%s\"}", this.category.getTag()));
 
         mockMvc.perform(builder)

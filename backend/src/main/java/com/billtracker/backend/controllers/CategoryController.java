@@ -8,8 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.RepresentationModel;
+import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,9 +67,23 @@ public class CategoryController {
         return newCategory;
     }
 
-    @PutMapping("/categories/{id}")
-    public Category updateCategory(@RequestBody Category category, @PathVariable Long id) {
-        category.setId(id);
+    @PatchMapping("/categories/{id}")
+    public Category updateCategory(@RequestBody Map<String, Object> fields, @PathVariable Long id) {
+        Category category = categoryService.findById(id);
+
+        if (category == null) {
+            throw new CategoryNotFoundException();
+        }
+
+        fields.forEach((k, v) -> {
+            Field field = ReflectionUtils.findField(Category.class, k);
+            if (field == null) {
+                throw new CategoryBadRequestException("field " + k + " not Found");
+            }
+            field.setAccessible(true);
+            ReflectionUtils.setField(field, category, v);
+        });
+
         categoryService.save(category);
 
         category.add(linkTo(methodOn(CategoryController.class).getCategory(category.getId()))
