@@ -1,9 +1,9 @@
-package com.billtracker.backend.services;
+package com.billtracker.backend.categories;
 
-import com.billtracker.backend.entities.Category;
-import com.billtracker.backend.entities.CategoryRepository;
-import com.billtracker.backend.entities.Expense;
-import com.billtracker.backend.entities.ExpenseRepository;
+import com.billtracker.backend.categories.Category;
+import com.billtracker.backend.categories.CategoryRepository;
+import com.billtracker.backend.expenses.Expense;
+import com.billtracker.backend.expenses.ExpenseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -34,7 +34,4 @@ public class CategoryService {
         categoryRepository.deleteById(id);
     }
 
-    public Set<Expense> findExpensesById(Long id) {
-        return expenseRepository.findExpensesByCategoryId(id);
-    }
 }

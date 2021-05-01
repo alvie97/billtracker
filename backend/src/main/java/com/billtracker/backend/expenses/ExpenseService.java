@@ -1,7 +1,7 @@
-package com.billtracker.backend.services;
+package com.billtracker.backend.expenses;
 
-import com.billtracker.backend.entities.Expense;
-import com.billtracker.backend.entities.ExpenseRepository;
+import com.billtracker.backend.expenses.Expense;
+import com.billtracker.backend.expenses.ExpenseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +13,7 @@ public class ExpenseService {
     ExpenseRepository expenseRepository;
 
     public Expense findById(Long id) {
-        return expenseRepository.findById(id).get();
+        return expenseRepository.findById(id).orElse(null);
     }
 
     public List<Expense> findAll() {

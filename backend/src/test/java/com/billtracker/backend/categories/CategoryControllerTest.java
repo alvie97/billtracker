@@ -1,8 +1,6 @@
-package com.billtracker.backend.controllers;
+package com.billtracker.backend.categories;
 
-import com.billtracker.backend.entities.Category;
-import com.billtracker.backend.entities.Expense;
-import com.billtracker.backend.services.CategoryService;
+import com.billtracker.backend.expenses.Expense;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.junit.jupiter.api.BeforeAll;
@@ -52,11 +50,11 @@ class CategoryControllerTest {
         this.expenses = new ArrayList<>();
         this.categories = new ArrayList<>();
         this.expenses.addAll(List.of(
-                new Expense("test 1", "test desc 1", 100.00, new Date()),
-                new Expense("test 2", "test desc 2", 200.00, new Date()),
-                new Expense("test 3", "test desc 3", 300.00, new Date()),
-                new Expense("test 4", "test desc 4", 400.00, new Date()),
-                new Expense("test 5", "test desc 5", 500.00, new Date())
+                new Expense("test 1", "test desc 1", 100.00),
+                new Expense("test 2", "test desc 2", 200.00),
+                new Expense("test 3", "test desc 3", 300.00),
+                new Expense("test 4", "test desc 4", 400.00),
+                new Expense("test 5", "test desc 5", 500.00)
         ));
 
         for (int i = 0; i < this.expenses.size(); ++i) {

@@ -1,4 +1,4 @@
-package com.billtracker.backend.controllers;
+package com.billtracker.backend.categories;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;

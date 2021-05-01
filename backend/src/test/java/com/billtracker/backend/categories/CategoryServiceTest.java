@@ -1,8 +1,9 @@
-package com.billtracker.backend.services;
+package com.billtracker.backend.categories;
 
-import com.billtracker.backend.entities.Category;
-import com.billtracker.backend.entities.CategoryRepository;
-import com.billtracker.backend.entities.Expense;
+import com.billtracker.backend.categories.Category;
+import com.billtracker.backend.categories.CategoryRepository;
+import com.billtracker.backend.categories.CategoryService;
+import com.billtracker.backend.expenses.Expense;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -56,29 +57,5 @@ class CategoryServiceTest {
         when(categoryRepository.save(categoryToSave)).thenReturn(categoryToSave);
         Category categoryRet = categoryService.save(categoryToSave);
         assertEquals(categoryRet, categoryToSave);
-    }
-
-    @Test
-    public void testFindAllExpensesById() {
-        Long id = 1L;
-        Category category = new Category("Groceries");
-        Set<Expense> expenses = Set.of(
-                new Expense("Test1",
-                        "TestDesc1",
-                            100.0,
-                            new Date()),
-                new Expense("Test2",
-                            "TestDesc2",
-                            200.0,
-                            new Date()),
-                new Expense("Test3",
-                            "TestDesc3",
-                            300.0,
-                            new Date()));
-        category.setExpenses(expenses);
-        when(categoryRepository.findById(id)).thenReturn(java.util.Optional.of(
-                category));
-        Set<Expense> expenses1 = categoryService.findExpensesById(id);
-        assertEquals(expenses, expenses1);
     }
 }

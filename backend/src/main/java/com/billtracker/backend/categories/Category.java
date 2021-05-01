@@ -1,11 +1,9 @@
-package com.billtracker.backend.entities;
+package com.billtracker.backend.categories;
 
+import com.billtracker.backend.expenses.Expense;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.server.core.Relation;
 
