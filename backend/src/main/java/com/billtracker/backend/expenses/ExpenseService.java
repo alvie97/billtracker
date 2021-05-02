@@ -1,7 +1,5 @@
 package com.billtracker.backend.expenses;
 
-import com.billtracker.backend.expenses.Expense;
-import com.billtracker.backend.expenses.ExpenseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

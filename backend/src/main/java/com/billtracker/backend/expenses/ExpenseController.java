@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -27,8 +26,7 @@ public class ExpenseController {
     @GetMapping("/expenses")
     public CollectionModel<Expense> getAllExpenses() {
         List<Expense> expenses = expenseService.findAll();
-        expenses.stream()
-                .map(expense -> expense.add(linkTo(methodOn(ExpenseController.class)
+        expenses.forEach(expense -> expense.add(linkTo(methodOn(ExpenseController.class)
                                        .getExpense(expense.getId())).withSelfRel()));
 
         return CollectionModel.of(expenses,

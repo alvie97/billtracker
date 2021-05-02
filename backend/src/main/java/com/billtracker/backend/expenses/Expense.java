@@ -10,7 +10,6 @@ import org.springframework.hateoas.server.core.Relation;
 
 import javax.persistence.*;
 import java.time.Instant;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
