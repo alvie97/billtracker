@@ -9,9 +9,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.hateoas.Link;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.ArrayList;
@@ -131,8 +134,39 @@ class ExpenseControllerTest {
     }
 
     @Test
-    void addExpenseTest() {
+    void addExpenseTest() throws Exception {
+        Expense expense = this.expenseList.get(0);
+        when(this.expenseService.save(any(Expense.class))).thenReturn(expense);
 
+        String selfLink = API_BASE_PATH + linkTo(methodOn(ExpenseController.class).getExpense(null))
+                .withSelfRel()
+                .getHref();
+
+        String expenseLink = API_BASE_PATH + linkTo(methodOn(ExpenseController.class).getAllExpenses())
+                .withSelfRel()
+                .getHref();
+
+        MockHttpServletRequestBuilder post_request =
+                MockMvcRequestBuilders.post("/api/expenses")
+                                      .contentType(MediaType.APPLICATION_JSON)
+                                      .content(String.format("{\"name\": \"%s\", \"description\": \"%s\", \"expense\": %f}",
+                                                             expense.getName(),
+                                                             expense.getDescription(),
+                                                             expense.getExpense()));
+        this.mockMvc.perform(post_request)
+                    .andExpect(MockMvcResultMatchers.status().isCreated())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.id")
+                                                    .value(expense.getId()))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.name")
+                                                    .value(expense.getName()))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.description")
+                                                    .value(expense.getDescription()))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.expense")
+                                                    .value(expense.getExpense()))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.date")
+                                                    .value(expense.getDate().toString()))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.self.href").value(selfLink))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.expenses.href").value(expenseLink));
     }
 
     @Test

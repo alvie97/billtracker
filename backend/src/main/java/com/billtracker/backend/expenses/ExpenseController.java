@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.RepresentationModel;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,6 +47,7 @@ public class ExpenseController {
     }
 
     @PostMapping("/expenses")
+    @ResponseStatus(HttpStatus.CREATED)
     public Expense addExpense(@RequestBody Expense expense) {
 
         Expense newExpense = expenseService.save(expense);
