@@ -1,12 +1,9 @@
 package com.billtracker.backend.expenses;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.hateoas.Link;
 import org.springframework.http.MediaType;
@@ -14,14 +11,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -170,27 +166,135 @@ class ExpenseControllerTest {
     }
 
     @Test
-    void updateExpenseTest() {
+    void updateExpenseTest() throws Exception {
+        Expense expense = this.expenseList.get(0);
+        long expenseId = expense.getId();
+        when(this.expenseService.findById(expenseId)).thenReturn(expense);
+
+        String newExpenseDescription = "test description";
+        double newExpenseExpense = 1337.0;
+
+        String selfLink = API_BASE_PATH + linkTo(methodOn(ExpenseController.class).getExpense(expenseId))
+                .withSelfRel()
+                .getHref();
+
+        String expenseLink = API_BASE_PATH + linkTo(methodOn(ExpenseController.class).getAllExpenses())
+                .withSelfRel()
+                .getHref();
+
+        MockHttpServletRequestBuilder patch_request =
+                MockMvcRequestBuilders.patch("/api/expenses/" + expenseId)
+                                      .contentType(MediaType.APPLICATION_JSON)
+                                      .content(String.format("{\"description\": \"%s\", \"expense\": %f}",
+                                                             newExpenseDescription,
+                                                             newExpenseExpense));
+
+        this.mockMvc.perform(patch_request)
+                    .andExpect(MockMvcResultMatchers.status().isOk())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.id")
+                                                    .value(expense.getId()))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.name")
+                                                    .value(expense.getName()))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.description")
+                                                    .value(newExpenseDescription))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.expense")
+                                                    .value(newExpenseExpense))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.date")
+                                                    .value(expense.getDate().toString()))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.self.href").value(selfLink))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.expenses.href").value(expenseLink));
+    }
+
+    @Test
+    void updateExpenseNotFoundTest() throws Exception {
+        long notFoundId = 9999;
+        when(this.expenseService.findById(notFoundId)).thenReturn(null);
+
+        MockHttpServletRequestBuilder patch_request =
+                MockMvcRequestBuilders.patch("/api/expenses/" + notFoundId)
+                                      .contentType(MediaType.APPLICATION_JSON)
+                                      .content("{}");
+
+        String expenseLink = API_BASE_PATH + linkTo(methodOn(ExpenseController.class).getAllExpenses())
+                .withSelfRel()
+                .getHref();
+
+        this.mockMvc.perform(patch_request)
+                    .andExpect(MockMvcResultMatchers.status().isNotFound())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                                                    .value("Expense " + notFoundId + " not found"))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.expenses.href").value(expenseLink));
+    }
+
+    @Test
+    void updateExpenseIncorrectFieldTest() throws Exception {
+        Expense expense = this.expenseList.get(0);
+        long notFoundId = expense.getId();
+        when(this.expenseService.findById(notFoundId)).thenReturn(expense);
+
+        String newExpenseDescription = "test description";
+        double newExpenseExpense = 1337.0;
+
+        String selfLink = API_BASE_PATH + linkTo(methodOn(ExpenseController.class).getExpense(notFoundId))
+                .withSelfRel()
+                .getHref();
+
+        String expenseLink = API_BASE_PATH + linkTo(methodOn(ExpenseController.class).getAllExpenses())
+                .withSelfRel()
+                .getHref();
+
+        String field = "asdfasdf";
+
+        MockHttpServletRequestBuilder patch_request =
+                MockMvcRequestBuilders.patch("/api/expenses/" + notFoundId)
+                                      .contentType(MediaType.APPLICATION_JSON)
+                                      .content(String.format("{\"description\": \"%s\", \"%s\": %f}",
+                                                             newExpenseDescription,
+                                                             field,
+                                                             newExpenseExpense));
+        this.mockMvc.perform(patch_request)
+                    .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                                                    .value("Incorrect field: " + field))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.expenses.href").doesNotExist());
+    }
+
+    @Test
+    void deleteExpenseTest() throws Exception {
+       long expenseId = this.expenseList.get(0).getId();
+
+       doNothing().when(this.expenseService).delete(expenseId);
+
+        String expenseLink = API_BASE_PATH + linkTo(methodOn(ExpenseController.class).getAllExpenses())
+                .withSelfRel()
+                .getHref();
+
+       this.mockMvc.perform(MockMvcRequestBuilders.delete("/api/expenses/" + expenseId))
+                   .andExpect(MockMvcResultMatchers.status().isOk())
+                   .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                                                   .value("Deleted expense with id "
+                                                                  + expenseId
+                                                                  + " successfully"))
+                   .andExpect(MockMvcResultMatchers.jsonPath("$._links.expenses.href").value(expenseLink));
 
     }
 
     @Test
-    void updateExpenseNotFoundTest() {
+    void deleteExpenseNotFoundTest() throws Exception {
+        long notFound = 9999;
 
-    }
+        doNothing().when(this.expenseService).delete(notFound);
 
-    @Test
-    void updateExpenseIncorrectFieldTest() {
+        String expenseLink = API_BASE_PATH + linkTo(methodOn(ExpenseController.class).getAllExpenses())
+                .withSelfRel()
+                .getHref();
 
-    }
-
-    @Test
-    void deleteExpenseTest() {
-
-    }
-
-    @Test
-    void deleteExpenseNotFoundTest() {
-
+        this.mockMvc.perform(MockMvcRequestBuilders.delete("/api/expenses/" + notFound))
+                    .andExpect(MockMvcResultMatchers.status().isOk())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                                                    .value("Deleted expense with id "
+                                                                   + notFound
+                                                                   + " successfully"))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.expenses.href").value(expenseLink));
     }
 }
