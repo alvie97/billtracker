@@ -86,11 +86,10 @@ public class ExpenseController {
     }
 
     @DeleteMapping("/expenses/{id}")
-    public RepresentationModel<EntityModel<SimpleResponse>> deleteExpense(@PathVariable Long id) {
+    public SimpleResponse deleteExpense(@PathVariable Long id) {
         expenseService.delete(id);
         SimpleResponse response = new SimpleResponse("Deleted expense with id " + id + " successfully");
-        EntityModel<SimpleResponse> model = EntityModel.of(response);
-        model.add(linkTo(methodOn(ExpenseController.class).getAllExpenses()).withRel("expenses"));
-        return model;
+        response.add(linkTo(methodOn(ExpenseController.class).getAllExpenses()).withRel("expenses"));
+        return response;
     }
 }
