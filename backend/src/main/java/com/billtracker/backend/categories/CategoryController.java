@@ -1,19 +1,15 @@
 package com.billtracker.backend.categories;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.billtracker.backend.expenses.ExpenseNotFoundException;
+import com.billtracker.backend.utils.SimpleResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.RepresentationModel;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -23,44 +19,34 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RequestMapping("/api")
 public class CategoryController {
 
-    private static final Logger log =
-            LoggerFactory.getLogger(CategoryController.class);
-
     @Autowired
     CategoryService categoryService;
 
     @GetMapping("/categories")
     public CollectionModel<Category> getAllCategories() {
         List<Category> categories = categoryService.findAll();
-        categories.stream()
-                .map(category -> category.add(linkTo(methodOn(CategoryController.class)
-                                                           .getCategory(category.getId()))
-                                                    .withSelfRel())).collect(
-                Collectors.toSet());
-
-        log.info(categories.toString());
-
+        categories.forEach(category -> category.add(linkTo(methodOn(CategoryController.class).getCategory(category.getId()))
+                                                            .withSelfRel()));
         return CollectionModel.of(categories,
-                                  linkTo(methodOn(CategoryController.class).getAllCategories())
-                                          .withSelfRel());
+                                  linkTo(methodOn(CategoryController.class).getAllCategories()).withSelfRel());
     }
 
     @GetMapping("/categories/{id}")
     public Category getCategory(@PathVariable Long id) {
         Category category = categoryService.findById(id);
-        category.add(linkTo(methodOn(CategoryController.class).getCategory(category.getId()))
-                            .withSelfRel());
+        if (category == null) {
+            throw new ExpenseNotFoundException(id);
+        }
+        category.add(linkTo(methodOn(CategoryController.class).getCategory(category.getId())).withSelfRel());
+        category.add(linkTo(methodOn(CategoryController.class).getAllCategories()).withRel("categories"));
         return category;
     }
 
     @PostMapping("/categories")
     public Category addCategory(@RequestBody Category category) {
-
         Category newCategory = categoryService.save(category);
-
-        newCategory.add(linkTo(methodOn(CategoryController.class).getCategory(category.getId()))
-                               .withSelfRel());
-
+        newCategory.add(linkTo(methodOn(CategoryController.class).getCategory(category.getId())).withSelfRel());
+        newCategory.add(linkTo(methodOn(CategoryController.class).getAllCategories()).withRel("categories"));
         return newCategory;
     }
 
@@ -69,13 +55,13 @@ public class CategoryController {
         Category category = categoryService.findById(id);
 
         if (category == null) {
-            throw new CategoryNotFoundException();
+            throw new CategoryNotFoundException(id);
         }
 
         fields.forEach((k, v) -> {
             Field field = ReflectionUtils.findField(Category.class, k);
             if (field == null) {
-                throw new CategoryBadRequestException("field " + k + " not Found");
+                throw new CategoryIncorrectFieldException(k);
             }
             field.setAccessible(true);
             ReflectionUtils.setField(field, category, v);
@@ -84,18 +70,16 @@ public class CategoryController {
         categoryService.save(category);
 
         category.add(linkTo(methodOn(CategoryController.class).getCategory(category.getId()))
-                            .withSelfRel());
-
+                             .withSelfRel());
+        category.add(linkTo(methodOn(CategoryController.class).getAllCategories()).withRel("categories"));
         return category;
     }
 
     @DeleteMapping("/categories/{id}")
-    public RepresentationModel<?> deleteCategory(@PathVariable Long id) {
+    public SimpleResponse deleteCategory(@PathVariable Long id) {
         categoryService.delete(id);
-        Map<String, String> res = new HashMap<>();
-        res.put("message", "Deleted Id " + id);
-        EntityModel<Map<String, String>> model = EntityModel.of(res);
-        model.add(linkTo(methodOn(CategoryController.class).getAllCategories()).withRel("categories"));
-        return model;
+        SimpleResponse simpleResponse = new SimpleResponse("Deleted Id " + id);
+        simpleResponse.add(linkTo(methodOn(CategoryController.class).getAllCategories()).withRel("categories"));
+        return simpleResponse;
     }
 }
