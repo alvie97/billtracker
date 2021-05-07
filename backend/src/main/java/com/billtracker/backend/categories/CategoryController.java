@@ -1,6 +1,5 @@
 package com.billtracker.backend.categories;
 
-import com.billtracker.backend.expenses.ExpenseNotFoundException;
 import com.billtracker.backend.utils.SimpleResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;

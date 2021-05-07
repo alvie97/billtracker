@@ -1,13 +1,7 @@
 package com.billtracker.backend;
 
-import com.billtracker.backend.expenses.Expense;
-import com.billtracker.backend.expenses.ExpenseRepository;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
-
-import java.time.Instant;
 
 @SpringBootApplication
 public class BackendApplication {

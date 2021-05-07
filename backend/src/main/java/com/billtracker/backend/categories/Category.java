@@ -9,7 +9,8 @@ import org.springframework.hateoas.server.core.Relation;
 
 import javax.persistence.*;
 import java.time.Instant;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Data
@@ -31,9 +32,9 @@ public class Category extends RepresentationModel {
     @JsonProperty("deleted_on")
     private Instant deletedOn;
 
-    @JoinTable(name="category_expense",
-            joinColumns = { @JoinColumn(name="category_id")},
-            inverseJoinColumns = { @JoinColumn(name="expense_id")})
+    @JoinTable(name = "category_expense",
+            joinColumns = {@JoinColumn(name = "category_id")},
+            inverseJoinColumns = {@JoinColumn(name = "expense_id")})
     @ManyToMany
     private Set<Expense> expenses = new HashSet<>();
 

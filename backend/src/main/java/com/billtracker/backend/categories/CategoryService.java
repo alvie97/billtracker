@@ -1,13 +1,10 @@
 package com.billtracker.backend.categories;
 
-import com.billtracker.backend.categories.Category;
-import com.billtracker.backend.categories.CategoryRepository;
-import com.billtracker.backend.expenses.Expense;
 import com.billtracker.backend.expenses.ExpenseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.List;
 
 
 @Service

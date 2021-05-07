@@ -1,19 +1,13 @@
 package com.billtracker.backend.categories;
 
-import com.billtracker.backend.categories.Category;
-import com.billtracker.backend.categories.CategoryRepository;
-import com.billtracker.backend.categories.CategoryService;
-import com.billtracker.backend.expenses.Expense;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-import java.util.Date;
 import java.util.List;
-import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest

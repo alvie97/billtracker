@@ -1,8 +1,5 @@
 package com.billtracker.backend.categories;
 
-import com.billtracker.backend.expenses.ExpenseController;
-import com.billtracker.backend.expenses.ExpenseIncorrectFieldException;
-import com.billtracker.backend.expenses.ExpenseNotFoundException;
 import com.billtracker.backend.utils.SimpleResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;

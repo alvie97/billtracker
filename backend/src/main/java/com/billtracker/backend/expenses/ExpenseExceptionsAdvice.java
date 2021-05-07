@@ -1,7 +1,6 @@
 package com.billtracker.backend.expenses;
 
 import com.billtracker.backend.utils.SimpleResponse;
-import org.springframework.hateoas.RepresentationModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
