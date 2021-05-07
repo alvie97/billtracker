@@ -1,14 +1,12 @@
 package com.billtracker.backend.categories;
 
-import com.billtracker.backend.expenses.Expense;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.hateoas.Link;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -17,7 +15,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
@@ -27,147 +24,240 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @WebMvcTest(CategoryController.class)
 class CategoryControllerTest {
 
-    final static String BASE_PATH = "http://localhost";
     @MockBean
-    CategoryService categoryService;
+    private CategoryService categoryService;
+
+    @MockBean
+    private CategoryRepository categoryRepository;
+
     @Autowired
     private MockMvc mockMvc;
-    private Category category;
-    private List<Category> categories;
-    private List<Expense> expenses;
 
-    private static ObjectWriter ow;
+    private List<Category> categoryList;
 
-    @BeforeAll
-    public static void setup() {
-        ow = new ObjectMapper().writer();
-    }
+    private String API_BASE_PATH = "http://localhost";
 
     @BeforeEach
-    public void init() {
-        this.category = new Category("Groceries");
-        this.category.setId(1L);
-        this.expenses = new ArrayList<>();
-        this.categories = new ArrayList<>();
-        this.expenses.addAll(List.of(
-                new Expense("test 1", "test desc 1", 100.00),
-                new Expense("test 2", "test desc 2", 200.00),
-                new Expense("test 3", "test desc 3", 300.00),
-                new Expense("test 4", "test desc 4", 400.00),
-                new Expense("test 5", "test desc 5", 500.00)
-        ));
+    void setup() {
+        this.categoryList = new ArrayList<>();
 
-        for (int i = 0; i < this.expenses.size(); ++i) {
-            this.expenses.get(i).setId(i + 1L);
-        }
-
-        this.categories.addAll(List.of(
-                new Category("Category 1"),
-                new Category("Category 2"),
-                new Category("Category 3"),
-                new Category("Category 4"),
-                new Category("Category 5"),
-                new Category("Category 6")
-        ));
-        for (int i = 0; i < this.categories.size(); ++i) {
-            this.categories.get(i).setId(i + 1L);
+        for (int i = 0; i < 10; ++i) {
+            this.categoryList.add(new Category("Test category " + i));
+            this.categoryList.get(i).setId((long) i);
         }
     }
 
     @Test
-    public void getAllCategoriesTest() throws Exception {
-        when(categoryService.findAll()).thenReturn(this.categories);
+    void getAllCategoriesTest() throws Exception {
+        when(this.categoryService.findAll()).thenReturn(this.categoryList);
 
+        ResultActions resultActions = this.mockMvc.perform(MockMvcRequestBuilders.get("/api/categories"));
 
-        String url = linkTo(methodOn(CategoryController.class).getAllCategories()).withSelfRel().getHref();
+        resultActions.andExpect(MockMvcResultMatchers.status().isOk())
+                     .andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories.size()")
+                                                     .value(this.categoryList.size()));
 
-        ResultActions perform = this.mockMvc
-                .perform(MockMvcRequestBuilders.get(url))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories.size()")
-                                                .value(this.categories.size()));
+        for (int i = 0; i < this.categoryList.size(); ++i) {
+            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories[" + i + "].id")
+                                                         .value(this.categoryList.get(i).getId()));
+            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories[" + i + "].tag")
+                                                         .value(this.categoryList.get(i).getTag()));
+            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories[" + i + "].created_on")
+                                                         .value(this.categoryList.get(i).getCreatedOn().toString()));
+            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories[" + i + "].deleted_on")
+                                                         .isEmpty());
 
-        for (int i = 0; i < this.categories.size(); ++i) {
-            Category currCategory = this.categories.get(i);
-            perform.andExpect(MockMvcResultMatchers
-                                      .jsonPath("$._embedded.categories[" + i + "].id")
-                                      .value(currCategory.getId()))
-                   .andExpect(MockMvcResultMatchers
-                                      .jsonPath("$._embedded.categories[" + i + "].tag")
-                                      .value(currCategory.getTag()))
-                   .andExpect(MockMvcResultMatchers
-                                      .jsonPath("$._embedded.categories[" + i + "].created_on")
-                                      .value(currCategory.getCreatedOn().toString()))
-                   .andExpect(MockMvcResultMatchers
-                                      .jsonPath("$._embedded.categories[" + i + "].deleted_on")
-                                      .value(currCategory.getDeletedOn()))
-                   .andExpect(MockMvcResultMatchers.jsonPath(
-                           "$._embedded.categories[" + i + "]._links.self.href")
-                                                   .value(BASE_PATH + url + "/" + currCategory.getId()));
+            Link link = linkTo(methodOn(CategoryController.class).getCategory(this.categoryList.get(i)
+                                                                                            .getId())).withSelfRel();
+            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories[" + i + "]._links.self.href")
+                                                         .value(API_BASE_PATH + link.getHref()));
         }
 
-        perform.andExpect(MockMvcResultMatchers.jsonPath(
-                "$._links.self.href").value(BASE_PATH + url));
+        Link link = linkTo(methodOn(CategoryController.class).getAllCategories()).withSelfRel();
 
+        resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._links.self.href")
+                                                     .value(API_BASE_PATH + link.getHref()));
     }
 
     @Test
-    public void getCategoryTest() throws Exception {
-        when(categoryService.findById(this.category.getId()))
-                .thenReturn(this.category);
+    void getCategoryTest() throws Exception {
+        Category category = this.categoryList.get(0);
+        when(this.categoryService.findById(category.getId())).thenReturn(category);
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/categories/1"))
-               .andExpect(MockMvcResultMatchers.status().isOk())
-               .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(this.category.getId()))
-               .andExpect(MockMvcResultMatchers.jsonPath("$.tag").value(this.category.getTag()))
-               .andExpect(MockMvcResultMatchers.jsonPath("$.created_on")
-                                               .value(this.category.getCreatedOn().toString()))
-               .andExpect(MockMvcResultMatchers.jsonPath("$.deleted_on").isEmpty());
+        String selfLink = API_BASE_PATH + linkTo(methodOn(CategoryController.class).getCategory(category.getId()))
+                .withSelfRel()
+                .getHref();
+        String categoryLink = API_BASE_PATH + linkTo(methodOn(CategoryController.class).getAllCategories())
+                .withSelfRel()
+                .getHref();
 
-        verify(categoryService, times(1)).findById(this.category.getId());
+        this.mockMvc.perform(MockMvcRequestBuilders.get("/api/categories/" + category.getId()))
+                    .andExpect(MockMvcResultMatchers.status().isOk())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.id")
+                                                    .value(category.getId()))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.tag")
+                                                    .value(category.getTag()))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.created_on")
+                                                    .value(category.getCreatedOn().toString()))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.deleted_on").isEmpty())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.self.href").value(selfLink))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.categories.href").value(categoryLink));
     }
 
     @Test
-    public void addCategoryTest() throws Exception {
-        when(categoryService.save(any(Category.class))).thenReturn(this.category);
+    void getCategoryNotFoundTest() throws Exception {
+        long notFoundId = 999;
+        when(this.categoryService.findById(notFoundId)).thenReturn(null);
 
-        MockHttpServletRequestBuilder builder =
+        String categoryLink = API_BASE_PATH + linkTo(methodOn(CategoryController.class).getAllCategories())
+                .withSelfRel()
+                .getHref();
+
+        this.mockMvc.perform(MockMvcRequestBuilders.get("/api/categories/" + notFoundId))
+                    .andExpect(MockMvcResultMatchers.status().isNotFound())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                                                    .value("Category " + notFoundId + " not found"))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.categories.href").value(categoryLink));
+    }
+
+    @Test
+    void addCategoryTest() throws Exception {
+        Category category = this.categoryList.get(0);
+        when(this.categoryService.save(any(Category.class))).thenReturn(category);
+
+        String selfLink = API_BASE_PATH + linkTo(methodOn(CategoryController.class).getCategory(null))
+                .withSelfRel()
+                .getHref();
+
+        String categoryLink = API_BASE_PATH + linkTo(methodOn(CategoryController.class).getAllCategories())
+                .withSelfRel()
+                .getHref();
+
+        MockHttpServletRequestBuilder post_request =
                 MockMvcRequestBuilders.post("/api/categories")
                                       .contentType(MediaType.APPLICATION_JSON)
-                                      .accept(MediaType.APPLICATION_JSON)
-                                      .characterEncoding("UTF-8")
-                                      .content(String.format("{\"tag\": \"%s\"}", this.category.getTag()));
+                                      .content(String.format("{\"tag\": \"%s\"}", category.getTag()));
 
-        mockMvc.perform(builder)
-               .andExpect(MockMvcResultMatchers.status().isOk())
-               .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(this.category.getId()))
-               .andExpect(MockMvcResultMatchers.jsonPath("$.tag").value(this.category.getTag()))
-               .andExpect(MockMvcResultMatchers.jsonPath("$.created_on")
-                                               .value(this.category.getCreatedOn().toString()))
-               .andExpect(MockMvcResultMatchers.jsonPath("$.deleted_on").isEmpty());
-
-        verify(categoryService, times(1)).save(any(Category.class));
+        this.mockMvc.perform(post_request)
+                    .andExpect(MockMvcResultMatchers.status().isCreated())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.id")
+                                                    .value(category.getId()))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.tag")
+                                                    .value(category.getTag()))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.created_on")
+                                                    .value(category.getCreatedOn().toString()))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.deleted_on").isEmpty())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.self.href").value(selfLink))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.categories.href").value(categoryLink));
     }
 
     @Test
-    public void updateCategoryTest() throws Exception {
-        when(categoryService.save(any(Category.class))).thenReturn(null);
+    void updateCategoryTest() throws Exception {
+        Category category = this.categoryList.get(0);
+        long categoryId = category.getId();
+        when(this.categoryService.findById(categoryId)).thenReturn(category);
 
-        MockHttpServletRequestBuilder builder =
-                MockMvcRequestBuilders.post("/api/categories/" + this.category.getId())
+        String newCategoryTag = "test description test update";
+
+        String selfLink = API_BASE_PATH + linkTo(methodOn(CategoryController.class).getCategory(categoryId))
+                .withSelfRel()
+                .getHref();
+
+        String categoryLink = API_BASE_PATH + linkTo(methodOn(CategoryController.class).getAllCategories())
+                .withSelfRel()
+                .getHref();
+
+        MockHttpServletRequestBuilder patch_request =
+                MockMvcRequestBuilders.patch("/api/categories/" + categoryId)
                                       .contentType(MediaType.APPLICATION_JSON)
-                                      .accept(MediaType.APPLICATION_JSON)
-                                      .characterEncoding("UTF-8")
-                                      .content(String.format("{\"tag\": \"%s\"}", this.category.getTag()));
+                                      .content(String.format("{\"tag\": \"%s\"}", newCategoryTag));
 
-        mockMvc.perform(builder)
-               .andExpect(MockMvcResultMatchers.status().isOk())
-               .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(this.category.getId()))
-               .andExpect(MockMvcResultMatchers.jsonPath("$.tag").value(this.category.getTag()))
-               .andExpect(MockMvcResultMatchers.jsonPath("$.created_on")
-                                               .value(this.category.getCreatedOn().toString()))
-               .andExpect(MockMvcResultMatchers.jsonPath("$.deleted_on").isEmpty());
-
-        verify(categoryService, times(1)).save(any(Category.class));
+        this.mockMvc.perform(patch_request)
+                    .andExpect(MockMvcResultMatchers.status().isOk())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(category.getId()))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.tag").value(newCategoryTag))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.created_on")
+                                                    .value(category.getCreatedOn().toString()))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.deleted_on").isEmpty())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.self.href").value(selfLink))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.categories.href").value(categoryLink));
     }
+
+    @Test
+    void updateCategoryNotFoundTest() throws Exception {
+        long notFoundId = 9999;
+        when(this.categoryService.findById(notFoundId)).thenReturn(null);
+
+        MockHttpServletRequestBuilder patch_request =
+                MockMvcRequestBuilders.patch("/api/categories/" + notFoundId)
+                                      .contentType(MediaType.APPLICATION_JSON)
+                                      .content("{}");
+
+        String categoryLink = API_BASE_PATH + linkTo(methodOn(CategoryController.class).getAllCategories())
+                .withSelfRel()
+                .getHref();
+
+        this.mockMvc.perform(patch_request)
+                    .andExpect(MockMvcResultMatchers.status().isNotFound())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                                                    .value("Category " + notFoundId + " not found"))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.categories.href").value(categoryLink));
+    }
+
+    @Test
+    void updateCategoryIncorrectFieldTest() throws Exception {
+        Category category = this.categoryList.get(0);
+        long id = category.getId();
+        when(this.categoryService.findById(id)).thenReturn(category);
+
+        String field = "asdfasdf";
+
+        MockHttpServletRequestBuilder patch_request =
+                MockMvcRequestBuilders.patch("/api/categories/" + id)
+                                      .contentType(MediaType.APPLICATION_JSON)
+                                      .content(String.format("{\"%s\": \"Test incorrect field\"}", field));
+        this.mockMvc.perform(patch_request)
+                    .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                                                    .value("Incorrect field: " + field))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.categories.href").doesNotExist());
+    }
+
+    @Test
+    void deleteCategoryTest() throws Exception {
+        long categoryId = this.categoryList.get(0).getId();
+
+        doNothing().when(this.categoryService).delete(categoryId);
+
+        String categoryLink = API_BASE_PATH + linkTo(methodOn(CategoryController.class).getAllCategories())
+                .withSelfRel()
+                .getHref();
+
+        this.mockMvc.perform(MockMvcRequestBuilders.delete("/api/categories/" + categoryId))
+                    .andExpect(MockMvcResultMatchers.status().isOk())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                                                    .value("Deleted category with id "
+                                                                   + categoryId
+                                                                   + " successfully"))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.categories.href").value(categoryLink));
+
+    }
+
+    @Test
+    void deleteCategoryNotFoundTest() throws Exception {
+        long notFoundId = 9999;
+
+        doThrow(EmptyResultDataAccessException.class).when(this.categoryService).delete(notFoundId);
+
+        String categoryLink = API_BASE_PATH + linkTo(methodOn(CategoryController.class).getAllCategories())
+                .withSelfRel()
+                .getHref();
+
+        this.mockMvc.perform(MockMvcRequestBuilders.delete("/api/categories/" + notFoundId))
+                    .andExpect(MockMvcResultMatchers.status().isNotFound())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                                                    .value("Category " + notFoundId + " not found"))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.categories.href").value(categoryLink));
+    }
+
 }
