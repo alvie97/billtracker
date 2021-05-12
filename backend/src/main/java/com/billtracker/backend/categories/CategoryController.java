@@ -1,6 +1,11 @@
 package com.billtracker.backend.categories;
 
+import com.billtracker.backend.expenses.Expense;
+import com.billtracker.backend.expenses.ExpenseController;
+import com.billtracker.backend.expenses.ExpenseNotFoundException;
+import com.billtracker.backend.expenses.ExpenseService;
 import com.billtracker.backend.utils.SimpleResponse;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.hateoas.CollectionModel;
@@ -9,8 +14,10 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.lang.reflect.Field;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -23,12 +30,21 @@ public class CategoryController {
     @Autowired
     CategoryService categoryService;
 
+    @Autowired
+    ExpenseService expenseService;
+
     @GetMapping("/categories")
     public CollectionModel<Category> getAllCategories() {
         List<Category> categories = categoryService.findAll();
-        categories.forEach(category -> category.add(linkTo(methodOn(CategoryController.class)
-                                                                   .getCategory(category.getId()))
-                                                            .withSelfRel()));
+        categories = categories
+                .stream()
+                .map(category ->
+                             category.add(linkTo(methodOn(CategoryController.class)
+                                                         .getCategory(category.getId()))
+                                                  .withSelfRel())
+                                     .add(linkTo(methodOn(CategoryController.class).getCategoryExpenses(
+                                             category.getId())).withRel("expenses")))
+                .collect(Collectors.toList());
         return CollectionModel.of(categories,
                                   linkTo(methodOn(CategoryController.class).getAllCategories()).withSelfRel());
     }
@@ -39,8 +55,10 @@ public class CategoryController {
         if (category == null) {
             throw new CategoryNotFoundException(id);
         }
-        category.add(linkTo(methodOn(CategoryController.class).getCategory(category.getId())).withSelfRel());
-        category.add(linkTo(methodOn(CategoryController.class).getAllCategories()).withRel("categories"));
+        category.add(linkTo(methodOn(CategoryController.class).getCategory(category.getId())).withSelfRel())
+                .add(linkTo(methodOn(CategoryController.class).getAllCategories()).withRel("categories"))
+                .add(linkTo(methodOn(CategoryController.class).getCategoryExpenses(category.getId()))
+                             .withRel("expenses"));
         return category;
     }
 
@@ -90,6 +108,81 @@ public class CategoryController {
 
         simpleResponse = new SimpleResponse("Deleted category with id " + id + " successfully");
         simpleResponse.add(linkTo(methodOn(CategoryController.class).getAllCategories()).withRel("categories"));
+        return simpleResponse;
+    }
+
+    @GetMapping("/categories/{id}/expenses")
+    public CollectionModel<Expense> getCategoryExpenses(@PathVariable Long id) {
+        Category category = categoryService.findById(id);
+
+        if (category == null) {
+            throw new CategoryNotFoundException(id);
+        }
+
+        List<Expense> expenses = category.getExpenses()
+                                         .stream()
+                                         .map(expense ->
+                                                      expense.add(linkTo(methodOn(ExpenseController.class).getExpense(expense.getId())).withSelfRel())
+                                         ).collect(Collectors.toList());
+
+        return CollectionModel.of(expenses,
+                                  linkTo(methodOn(ExpenseController.class).getAllExpenses())
+                                          .withRel("expenses"));
+    }
+
+    @PostMapping("/categories/{id}/expenses")
+    public SimpleResponse addExpenseToCategory(@PathVariable long id, @RequestBody JsonNode request) {
+        Category category = categoryService.findById(id);
+
+        if (category == null) {
+            throw new CategoryNotFoundException(id);
+        }
+
+        long expenseId = request.get("expense_id").asLong();
+
+        Expense expense = expenseService.findById(expenseId);
+
+        if (expense == null) {
+            throw new ExpenseNotFoundException(expenseId);
+        }
+
+        category.getExpenses().add(expense);
+        expense.getCategories().add(category);
+
+        categoryService.save(category);
+
+        SimpleResponse simpleResponse = new SimpleResponse("expense added to category successfully");
+        simpleResponse.add(linkTo(methodOn(CategoryController.class).getCategoryExpenses(id)).withRel("expenses"));
+
+        return simpleResponse;
+    }
+
+    @DeleteMapping("/categories/{id}/expenses")
+    public SimpleResponse removeExpenseFromCategory(@PathVariable long id, @RequestBody JsonNode request) {
+        Category category = categoryService.findById(id);
+
+        if (category == null) {
+            throw new CategoryNotFoundException(id);
+        }
+
+        long expenseId = request.get("expense_id").asLong();
+
+        Expense expense = expenseService.findById(expenseId);
+
+        // TODO: find expense inside relationship
+
+        if (expense == null) {
+            throw new ExpenseNotFoundException(expenseId);
+        }
+
+        category.getExpenses().remove(expense);
+        expense.getCategories().remove(category);
+
+        categoryService.save(category);
+
+        SimpleResponse simpleResponse = new SimpleResponse("expense removed from category successfully");
+        simpleResponse.add(linkTo(methodOn(CategoryController.class).getCategoryExpenses(id)).withRel("expenses"));
+
         return simpleResponse;
     }
 }
