@@ -131,56 +131,57 @@ public class CategoryController {
     }
 
     @PostMapping("/categories/{id}/expenses")
-    public SimpleResponse addExpenseToCategory(@PathVariable long id, @RequestBody JsonNode request) {
+    public SimpleResponse addExpenseToCategory(@PathVariable long id, @RequestBody CategoryExpensesRequest expensesIds) {
         Category category = categoryService.findById(id);
 
         if (category == null) {
             throw new CategoryNotFoundException(id);
         }
 
-        long expenseId = request.get("expense_id").asLong();
+        expensesIds.getExpensesIds()
+                   .forEach(expenseId -> {
+                       Expense expense = expenseService.findById(expenseId);
 
-        Expense expense = expenseService.findById(expenseId);
+                       if (expense == null) {
+                           throw new ExpenseNotFoundException(expenseId);
+                       }
 
-        if (expense == null) {
-            throw new ExpenseNotFoundException(expenseId);
-        }
-
-        category.getExpenses().add(expense);
-        expense.getCategories().add(category);
+                       category.getExpenses().add(expense);
+                       expense.getCategories().add(category);
+                   });
 
         categoryService.save(category);
 
-        SimpleResponse simpleResponse = new SimpleResponse("expense added to category successfully");
+        SimpleResponse simpleResponse = new SimpleResponse("expenses added to category successfully");
         simpleResponse.add(linkTo(methodOn(CategoryController.class).getCategoryExpenses(id)).withRel("expenses"));
 
         return simpleResponse;
     }
 
     @DeleteMapping("/categories/{id}/expenses")
-    public SimpleResponse removeExpenseFromCategory(@PathVariable long id, @RequestBody JsonNode request) {
+    public SimpleResponse removeExpenseFromCategory(@PathVariable long id, @RequestBody CategoryExpensesRequest expensesIds) {
         Category category = categoryService.findById(id);
 
         if (category == null) {
             throw new CategoryNotFoundException(id);
         }
 
-        long expenseId = request.get("expense_id").asLong();
+        expensesIds.getExpensesIds()
+                   .forEach(expenseId -> {
+                       Expense expense = expenseService.findById(expenseId);
 
-        Expense expense = expenseService.findById(expenseId);
+                       if (expense == null) {
+                           throw new ExpenseNotFoundException(expenseId);
+                       }
 
-        // TODO: find expense inside relationship
+                       category.getExpenses().remove(expense);
+                       expense.getCategories().remove(category);
+                   });
 
-        if (expense == null) {
-            throw new ExpenseNotFoundException(expenseId);
-        }
-
-        category.getExpenses().remove(expense);
-        expense.getCategories().remove(category);
 
         categoryService.save(category);
 
-        SimpleResponse simpleResponse = new SimpleResponse("expense removed from category successfully");
+        SimpleResponse simpleResponse = new SimpleResponse("expenses removed from category successfully");
         simpleResponse.add(linkTo(methodOn(CategoryController.class).getCategoryExpenses(id)).withRel("expenses"));
 
         return simpleResponse;
