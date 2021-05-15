@@ -1,6 +1,8 @@
 // TODO: field validation
 package com.billtracker.backend.expenses;
 
+import com.billtracker.backend.categories.Category;
+import com.billtracker.backend.categories.CategoryController;
 import com.billtracker.backend.utils.SimpleResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -40,6 +43,8 @@ public class ExpenseController {
         }
         expense.add(linkTo(methodOn(ExpenseController.class).getExpense(expense.getId()))
                             .withSelfRel());
+        expense.add(linkTo(methodOn(ExpenseController.class).getExpenseCategories(expense.getId()))
+                            .withRel("categories"));
         expense.add(linkTo(methodOn(ExpenseController.class).getAllExpenses()).withRel("expenses"));
         return expense;
     }
@@ -89,5 +94,29 @@ public class ExpenseController {
         SimpleResponse response = new SimpleResponse("Deleted expense with id " + id + " successfully");
         response.add(linkTo(methodOn(ExpenseController.class).getAllExpenses()).withRel("expenses"));
         return response;
+    }
+
+    @GetMapping("/expenses/{id}/categories")
+    public CollectionModel<Category> getExpenseCategories(@PathVariable long id) {
+
+        Expense expense = expenseService.findById(id);
+
+        if (expense == null) {
+            throw new ExpenseNotFoundException(id);
+        }
+
+        List<Category> categories =
+                expense.getCategories()
+                       .stream()
+                       .map(category -> category.add(
+                               linkTo(methodOn(CategoryController.class)
+                                              .getCategory(category.getId()))
+                                       .withSelfRel()))
+                        .collect(Collectors.toList());
+
+        return CollectionModel.of(categories,
+                                  linkTo(methodOn(ExpenseController.class).getExpenseCategories(id)).withSelfRel(),
+                                  linkTo(methodOn(ExpenseController.class).getExpense(id)).withRel("expense"),
+                                  linkTo(methodOn(CategoryController.class).getAllCategories()).withRel("categories"));
     }
 }
