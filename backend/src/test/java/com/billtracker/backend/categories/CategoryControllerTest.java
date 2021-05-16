@@ -1,5 +1,7 @@
 package com.billtracker.backend.categories;
 
+import com.billtracker.backend.expenses.ExpenseRepository;
+import com.billtracker.backend.expenses.ExpenseService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,12 @@ class CategoryControllerTest {
 
     @MockBean
     private CategoryRepository categoryRepository;
+
+    @MockBean
+    private ExpenseService expenseService;
+
+    @MockBean
+    private ExpenseRepository expenseRepository;
 
     @Autowired
     private MockMvc mockMvc;

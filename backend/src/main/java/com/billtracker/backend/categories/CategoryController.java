@@ -126,8 +126,9 @@ public class CategoryController {
                                          ).collect(Collectors.toList());
 
         return CollectionModel.of(expenses,
-                                  linkTo(methodOn(ExpenseController.class).getAllExpenses())
-                                          .withRel("expenses"));
+                                  linkTo(methodOn(CategoryController.class).getCategoryExpenses(id)).withSelfRel(),
+                                  linkTo(methodOn(CategoryController.class).getCategory(id)).withRel("category"),
+                                  linkTo(methodOn(ExpenseController.class).getAllExpenses()).withRel("expenses"));
     }
 
     @PostMapping("/categories/{id}/expenses")

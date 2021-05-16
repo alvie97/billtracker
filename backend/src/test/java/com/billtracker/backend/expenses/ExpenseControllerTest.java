@@ -1,7 +1,11 @@
 package com.billtracker.backend.expenses;
 
+import com.billtracker.backend.categories.Category;
+import com.billtracker.backend.categories.CategoryController;
+import com.billtracker.backend.categories.CategoryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -14,8 +18,12 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
@@ -30,6 +38,9 @@ class ExpenseControllerTest {
 
     @MockBean
     private ExpenseRepository expenseRepository;
+
+    @MockBean
+    private CategoryRepository categoryRepository;
 
     @Autowired
     private MockMvc mockMvc;
@@ -296,5 +307,59 @@ class ExpenseControllerTest {
                                                                    + notFound
                                                                    + " successfully"))
                     .andExpect(MockMvcResultMatchers.jsonPath("$._links.expenses.href").value(expenseLink));
+    }
+
+    @Test
+    void getExpenseCategoriesTest() throws Exception {
+        Expense expense = this.expenseList.get(0);
+
+        for (int i = 0; i < 3; i++) {
+            Category auxCategory = new Category("test " + i);
+            auxCategory.setId((long) i);
+            expense.getCategories().add(auxCategory);
+        }
+
+        when(this.expenseService.findById(expense.getId())).thenReturn(expense);
+
+        List<Category> categoryList = new ArrayList<>(expense.getCategories());
+
+        ResultActions resultActions =
+                this.mockMvc.perform(MockMvcRequestBuilders.get("/api/expenses/" + expense.getId() + "/categories"))
+                                                  .andExpect(MockMvcResultMatchers.status().isOk());
+
+
+        resultActions.andExpect(MockMvcResultMatchers.status().isOk())
+                     .andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories.size()")
+                                                     .value(categoryList.size()));
+
+        for (int i = 0; i < categoryList.size(); ++i) {
+
+            Category category = categoryList.get(i);
+
+            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories[" + i + "].id")
+                                                         .value(category.getId()));
+            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories[" + i + "].tag")
+                                                         .value(category.getTag()));
+            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories[" + i + "].created_on")
+                                                         .value(category.getCreatedOn().toString()));
+            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories[" + i + "].deleted_on")
+                                                         .isEmpty());
+
+            Link link = linkTo(methodOn(CategoryController.class).getCategory(category.getId())).withSelfRel();
+            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories[" + i + "]._links.self.href")
+                                                         .value(API_BASE_PATH + link.getHref()));
+        }
+
+        Link selfLink = linkTo(methodOn(ExpenseController.class).getExpenseCategories(expense.getId())).withSelfRel();
+        Link expenseLink = linkTo(methodOn(ExpenseController.class).getExpense(expense.getId())).withRel("expense");
+        Link categoriesLink = linkTo(methodOn(CategoryController.class).getAllCategories()).withRel("categories");
+
+        resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._links.self.href")
+                                                     .value(API_BASE_PATH + selfLink.getHref()))
+                     .andExpect(MockMvcResultMatchers.jsonPath("$._links.expense.href")
+                                                     .value(API_BASE_PATH + expenseLink.getHref()))
+                     .andExpect(MockMvcResultMatchers.jsonPath("$._links.categories.href")
+                                                     .value(API_BASE_PATH + categoriesLink.getHref()));
+
     }
 }
