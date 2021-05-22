@@ -5,7 +5,6 @@ import com.billtracker.backend.expenses.ExpenseController;
 import com.billtracker.backend.expenses.ExpenseNotFoundException;
 import com.billtracker.backend.expenses.ExpenseService;
 import com.billtracker.backend.utils.SimpleResponse;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.hateoas.CollectionModel;
@@ -13,8 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.lang.reflect.Field;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -122,7 +121,8 @@ public class CategoryController {
         List<Expense> expenses = category.getExpenses()
                                          .stream()
                                          .map(expense ->
-                                                      expense.add(linkTo(methodOn(ExpenseController.class).getExpense(expense.getId())).withSelfRel())
+                                                      expense.add(linkTo(methodOn(ExpenseController.class).getExpense(
+                                                              expense.getId())).withSelfRel())
                                          ).collect(Collectors.toList());
 
         return CollectionModel.of(expenses,
@@ -132,7 +132,8 @@ public class CategoryController {
     }
 
     @PostMapping("/categories/{id}/expenses")
-    public SimpleResponse addExpenseToCategory(@PathVariable long id, @RequestBody CategoryExpensesRequest expensesIds) {
+    public SimpleResponse addExpenseToCategory(@PathVariable long id,
+                                               @Valid @RequestBody CategoryExpensesRequest expensesIds) {
         Category category = categoryService.findById(id);
 
         if (category == null) {
@@ -160,7 +161,8 @@ public class CategoryController {
     }
 
     @DeleteMapping("/categories/{id}/expenses")
-    public SimpleResponse removeExpenseFromCategory(@PathVariable long id, @RequestBody CategoryExpensesRequest expensesIds) {
+    public SimpleResponse removeExpenseFromCategory(@PathVariable long id,
+                                                    @RequestBody CategoryExpensesRequest expensesIds) {
         Category category = categoryService.findById(id);
 
         if (category == null) {

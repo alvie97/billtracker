@@ -1,7 +1,11 @@
 package com.billtracker.backend.categories;
 
+import com.billtracker.backend.expenses.Expense;
+import com.billtracker.backend.expenses.ExpenseController;
 import com.billtracker.backend.expenses.ExpenseRepository;
 import com.billtracker.backend.expenses.ExpenseService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,9 +19,11 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import static org.assertj.core.api.Assertions.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -43,7 +49,7 @@ class CategoryControllerTest {
 
     private List<Category> categoryList;
 
-    private String API_BASE_PATH = "http://localhost";
+    private final String API_BASE_PATH = "http://localhost";
 
     @BeforeEach
     void setup() {
@@ -266,6 +272,169 @@ class CategoryControllerTest {
                     .andExpect(MockMvcResultMatchers.jsonPath("$.message")
                                                     .value("Category " + notFoundId + " not found"))
                     .andExpect(MockMvcResultMatchers.jsonPath("$._links.categories.href").value(categoryLink));
+    }
+
+    @Test
+    void getCategoryExpensesTest() throws Exception {
+        Category category = this.categoryList.get(0);
+
+        for (int i = 0; i < 3; i++) {
+            Expense auxExpense = new Expense("test " + i, "test desc " + i, i);
+            auxExpense.setId((long) i);
+            category.getExpenses().add(auxExpense);
+        }
+
+        when(this.categoryService.findById(category.getId())).thenReturn(category);
+
+        List<Expense> expenseList = new ArrayList<>(category.getExpenses());
+
+        ResultActions resultActions =
+                this.mockMvc.perform(MockMvcRequestBuilders.get("/api/categories/" + category.getId() + "/expenses"))
+                            .andExpect(MockMvcResultMatchers.status().isOk());
+
+
+        resultActions.andExpect(MockMvcResultMatchers.status().isOk())
+                     .andExpect(MockMvcResultMatchers.jsonPath("$._embedded.expenses.size()")
+                                                     .value(expenseList.size()));
+
+        for (int i = 0; i < expenseList.size(); ++i) {
+
+            Expense expense = expenseList.get(i);
+
+            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.expenses[" + i + "].id")
+                                                         .value(expense.getId()));
+            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.expenses[" + i + "].name")
+                                                         .value(expense.getName()));
+            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.expenses[" + i + "].description")
+                                                         .value(expense.getDescription()));
+            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.expenses[" + i + "].expense")
+                                                         .value(expense.getExpense()));
+            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.expenses[" + i + "].date")
+                                                         .value(expense.getDate().toString()));
+
+            Link link = linkTo(methodOn(ExpenseController.class).getExpense(expense.getId())).withSelfRel();
+            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.expenses[" + i + "]._links.self.href")
+                                                         .value(API_BASE_PATH + link.getHref()));
+        }
+
+        Link selfLink = linkTo(methodOn(CategoryController.class).getCategoryExpenses(category.getId())).withSelfRel();
+        Link categoryLink = linkTo(methodOn(CategoryController.class).getCategory(category.getId())).withRel("category");
+        Link expensesLink = linkTo(methodOn(ExpenseController.class).getAllExpenses()).withRel("expenses");
+
+        resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._links.self.href")
+                                                     .value(API_BASE_PATH + selfLink.getHref()))
+                     .andExpect(MockMvcResultMatchers.jsonPath("$._links.category.href")
+                                                     .value(API_BASE_PATH + categoryLink.getHref()))
+                     .andExpect(MockMvcResultMatchers.jsonPath("$._links.expenses.href")
+                                                     .value(API_BASE_PATH + expensesLink.getHref()));
+    }
+
+    @Test
+    void getCategoryExpensesCategoryNotFoundTest() throws Exception {
+        long notFoundId = 9999;
+        when(categoryService.findById(notFoundId)).thenReturn(null);
+
+        this.mockMvc.perform(MockMvcRequestBuilders.get("/api/categories/" + notFoundId + "/expenses"))
+                    .andExpect(MockMvcResultMatchers.status().isNotFound());
+    }
+
+    @Test
+    void addExpenseToCategoryTest() throws Exception {
+        Category category = this.categoryList.get(0);
+        when(categoryService.findById(category.getId())).thenReturn(category);
+
+        List<Expense> expenses = new ArrayList<>();
+
+        for (long i = 0; i < 3; i++) {
+            Expense expense = new Expense("test " + i, "test desc " + i, i);
+            expense.setId(i);
+            when(expenseService.findById(i)).thenReturn(expense);
+            expenses.add(expense);
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        CategoryExpensesRequest categoryExpensesRequest =
+                new CategoryExpensesRequest(expenses.stream()
+                                                     .map(Expense::getId)
+                                                     .collect(Collectors.toList()));
+        String contentJson = objectMapper.writeValueAsString(categoryExpensesRequest);
+
+        Link expensesLink = linkTo(methodOn(CategoryController.class).getCategoryExpenses(category.getId()))
+                                   .withRel("expenses");
+
+        this.mockMvc.perform(
+                MockMvcRequestBuilders.post("/api/categories/" + category.getId() + "/expenses")
+                                      .contentType(MediaType.APPLICATION_JSON)
+                                      .content(contentJson))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                                                .value("expenses added to category successfully"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$._links.expenses.href")
+                                                .value(API_BASE_PATH + expensesLink.getHref()));
+
+        assertThat(category.getExpenses()).extracting(Expense::getName)
+                                          .containsExactlyInAnyOrderElementsOf(expenses.stream()
+                                                                             .map(Expense::getName)
+                                                                             .collect(Collectors.toList()));
+    }
+
+    @Test
+    void addExpenseToCategoryEmptyRequestTest() throws Exception {
+        Category category = categoryList.get(0);
+        when(categoryService.findById(category.getId())).thenReturn(category);
+
+        this.mockMvc.perform(MockMvcRequestBuilders.post("/api/categories/" + category.getId() + "/expenses")
+                                                   .contentType(MediaType.APPLICATION_JSON)
+                                                   .content("{}"))
+                    .andExpect(MockMvcResultMatchers.status().isBadRequest());
+    }
+
+    @Test
+    void addExpenseToCategoryCategoryNotFoundTest() throws Exception {
+        long notFoundId = 9999;
+        when(categoryService.findById(notFoundId)).thenReturn(null);
+
+        this.mockMvc.perform(MockMvcRequestBuilders.post("/api/categories/" + notFoundId + "/expenses")
+                                                   .contentType(MediaType.APPLICATION_JSON)
+                                                   .content("{}"))
+                    .andExpect(MockMvcResultMatchers.status().isNotFound());
+    }
+
+    @Test
+    void removeExpenseFromCategoryTest() throws Exception {
+        Category category = this.categoryList.get(0);
+        when(categoryService.findById(category.getId())).thenReturn(category);
+
+        for (long i = 0; i < 3; i++) {
+            Expense expense = new Expense("test " + i, "test desc " + i, i);
+            expense.setId(i);
+            when(expenseService.findById(i)).thenReturn(expense);
+            category.getExpenses().add(expense);
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        CategoryExpensesRequest categoryExpensesRequest =
+                new CategoryExpensesRequest(category.getExpenses()
+                                                    .stream()
+                                                    .map(Expense::getId)
+                                                    .limit(2)
+                                                    .collect(Collectors.toList()));
+        String contentJson = objectMapper.writeValueAsString(categoryExpensesRequest);
+
+        Link expensesLink = linkTo(methodOn(CategoryController.class).getCategoryExpenses(category.getId()))
+                .withRel("expenses");
+
+        this.mockMvc.perform(
+                MockMvcRequestBuilders.delete("/api/categories/" + category.getId() + "/expenses")
+                                      .contentType(MediaType.APPLICATION_JSON)
+                                      .content(contentJson))
+                    .andExpect(MockMvcResultMatchers.status().isOk())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                                                    .value("expenses removed from category successfully"))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.expenses.href")
+                                                    .value(API_BASE_PATH + expensesLink.getHref()));
+
+        assertThat(category.getExpenses().size()).isEqualTo(1);
     }
 
 }

@@ -360,6 +360,14 @@ class ExpenseControllerTest {
                                                      .value(API_BASE_PATH + expenseLink.getHref()))
                      .andExpect(MockMvcResultMatchers.jsonPath("$._links.categories.href")
                                                      .value(API_BASE_PATH + categoriesLink.getHref()));
+    }
 
+    @Test
+    void getExpenseCategoriesExpenseNotFoundTest() throws Exception {
+        long notFoundId = 9999;
+        when(expenseService.findById(notFoundId)).thenReturn(null);
+
+        this.mockMvc.perform(MockMvcRequestBuilders.get("/api/expenses/" + notFoundId + "/categories"))
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 }
