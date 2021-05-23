@@ -8,12 +8,15 @@ import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.server.core.Relation;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Data
+@Builder
 @NoArgsConstructor
 @Relation(collectionRelation = "categories", itemRelation = "category")
 public class Category extends RepresentationModel<Category> {
@@ -22,6 +25,8 @@ public class Category extends RepresentationModel<Category> {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
+    @NotBlank
+    @Size(max = 64)
     private String tag;
 
     @Column(name = "created_on")
@@ -40,8 +45,4 @@ public class Category extends RepresentationModel<Category> {
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     private Set<Expense> expenses = new HashSet<>();
-
-    public Category(String tag) {
-        this.tag = tag;
-    }
 }

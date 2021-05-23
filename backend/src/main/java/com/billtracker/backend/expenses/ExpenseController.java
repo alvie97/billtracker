@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +52,7 @@ public class ExpenseController {
 
     @PostMapping("/expenses")
     @ResponseStatus(HttpStatus.CREATED)
-    public Expense addExpense(@RequestBody Expense expense) {
+    public Expense addExpense(@RequestBody @Valid Expense expense) {
 
         Expense newExpense = expenseService.save(expense);
 

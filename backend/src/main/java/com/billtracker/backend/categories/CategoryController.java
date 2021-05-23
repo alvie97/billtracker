@@ -63,7 +63,7 @@ public class CategoryController {
 
     @PostMapping("/categories")
     @ResponseStatus(HttpStatus.CREATED)
-    public Category addCategory(@RequestBody Category category) {
+    public Category addCategory(@RequestBody @Valid Category category) {
         Category newCategory = categoryService.save(category);
         newCategory.add(linkTo(methodOn(CategoryController.class).getCategory(category.getId())).withSelfRel());
         newCategory.add(linkTo(methodOn(CategoryController.class).getAllCategories()).withRel("categories"));
@@ -133,7 +133,7 @@ public class CategoryController {
 
     @PostMapping("/categories/{id}/expenses")
     public SimpleResponse addExpenseToCategory(@PathVariable long id,
-                                               @Valid @RequestBody CategoryExpensesRequest expensesIds) {
+                                               @RequestBody @Valid CategoryExpensesRequest expensesIds) {
         Category category = categoryService.findById(id);
 
         if (category == null) {
