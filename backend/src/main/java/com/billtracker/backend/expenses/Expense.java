@@ -1,13 +1,16 @@
 package com.billtracker.backend.expenses;
 
 import com.billtracker.backend.categories.Category;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.server.core.Relation;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.persistence.*;
-import javax.validation.constraints.*;
+import javax.validation.constraints.DecimalMin;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
@@ -21,7 +24,7 @@ import java.util.Set;
 public class Expense extends RepresentationModel<Expense> {
 
     @Id
-    @GeneratedValue(strategy= GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @NotBlank
@@ -34,11 +37,13 @@ public class Expense extends RepresentationModel<Expense> {
     @NotNull
     private Double expense;
 
+    @Builder.Default
     private Instant date = Instant.now();
 
     @ManyToMany(mappedBy = "expenses")
     @JsonIgnore
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
+    @Builder.Default
     private Set<Category> categories = new HashSet<>();
 }

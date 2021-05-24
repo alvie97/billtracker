@@ -30,7 +30,7 @@ public class ExpenseController {
     public CollectionModel<Expense> getAllExpenses() {
         List<Expense> expenses = expenseService.findAll();
         expenses.forEach(expense -> expense.add(linkTo(methodOn(ExpenseController.class)
-                                       .getExpense(expense.getId())).withSelfRel()));
+                                                               .getExpense(expense.getId())).withSelfRel()));
 
         return CollectionModel.of(expenses,
                                   linkTo(methodOn(ExpenseController.class).getAllExpenses()).withSelfRel());
@@ -57,7 +57,7 @@ public class ExpenseController {
         Expense newExpense = expenseService.save(expense);
 
         newExpense.add(linkTo(methodOn(ExpenseController.class).getExpense(expense.getId()))
-                            .withSelfRel());
+                               .withSelfRel());
         newExpense.add(linkTo(methodOn(ExpenseController.class).getAllExpenses()).withRel("expenses"));
 
         return newExpense;
@@ -83,7 +83,7 @@ public class ExpenseController {
         expenseService.save(expenseToUpdate);
 
         expenseToUpdate.add(linkTo(methodOn(ExpenseController.class).getExpense(expenseToUpdate.getId()))
-                            .withSelfRel());
+                                    .withSelfRel());
         expenseToUpdate.add(linkTo(methodOn(ExpenseController.class).getAllExpenses()).withRel("expenses"));
 
         return expenseToUpdate;
@@ -113,7 +113,7 @@ public class ExpenseController {
                                linkTo(methodOn(CategoryController.class)
                                               .getCategory(category.getId()))
                                        .withSelfRel()))
-                        .collect(Collectors.toList());
+                       .collect(Collectors.toList());
 
         return CollectionModel.of(categories,
                                   linkTo(methodOn(ExpenseController.class).getExpenseCategories(id)).withSelfRel(),

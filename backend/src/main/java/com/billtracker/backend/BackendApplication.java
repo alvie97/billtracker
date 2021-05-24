@@ -19,22 +19,52 @@ public class BackendApplication {
     public CommandLineRunner demo(ExpenseRepository expenseRepository, CategoryRepository categoryRepository) {
         return (args) -> {
 
-            Expense expense = expenseRepository.save(new Expense("Servicio Agua", "Agua", 500.00));
-            expenseRepository.save(new Expense("Servicio Gas", "Gas", 500.00));
-            expenseRepository.save(new Expense("Servicio Luz", "Luz", 500.00));
-            expenseRepository.save(new Expense("Internet", "Fibertel te odio", 3000.00));
-            expenseRepository.save(new Expense("Empanadas", "Ale traeme unas empanadas vale", 1000.00));
+            Expense expense =
+                    expenseRepository.save(Expense.builder()
+                                                  .name("Servicio Agua")
+                                                  .description("Agua")
+                                                  .expense(500.00)
+                                                  .build());
+            expenseRepository.save(Expense.builder()
+                                          .name("Servicio Gas")
+                                          .description("Gas")
+                                          .expense(500.00)
+                                          .build());
+            expenseRepository.save(Expense.builder()
+                                          .name("Servicio Luz")
+                                          .description("Luz")
+                                          .expense(500.00)
+                                          .build());
+            expenseRepository.save(Expense.builder()
+                                          .name("Internet")
+                                          .description("Fibertel te odio")
+                                          .expense(3000.00)
+                                          .build());
+            expenseRepository.save(Expense.builder()
+                                          .name("Empanadas")
+                                          .description("Ale traeme unas empanadas vale")
+                                          .expense(1000.00)
+                                          .build());
 
-            Category category = new Category("Groceries");
-            category.getExpenses().add(expense);
+            Category category = Category.builder()
+                                        .tag("Groceries")
+                                        .build();
+            category.getExpenses()
+                    .add(expense);
             categoryRepository.save(category);
 
-            Category internet = new Category("Internet");
-            internet.getExpenses().add(expense);
+            Category internet = Category.builder()
+                                        .tag("Internet")
+                                        .build();
+            internet.getExpenses()
+                    .add(expense);
             categoryRepository.save(internet);
 
-            Category empanadas = new Category("Empanadas");
-            empanadas.getExpenses().add(expense);
+            Category empanadas = Category.builder()
+                                         .tag("Empanadas")
+                                         .build();
+            empanadas.getExpenses()
+                     .add(expense);
             categoryRepository.save(empanadas);
         };
     }

@@ -123,7 +123,8 @@ public class CategoryController {
                                          .map(expense ->
                                                       expense.add(linkTo(methodOn(ExpenseController.class).getExpense(
                                                               expense.getId())).withSelfRel())
-                                         ).collect(Collectors.toList());
+                                         )
+                                         .collect(Collectors.toList());
 
         return CollectionModel.of(expenses,
                                   linkTo(methodOn(CategoryController.class).getCategoryExpenses(id)).withSelfRel(),
@@ -148,8 +149,10 @@ public class CategoryController {
                            throw new ExpenseNotFoundException(expenseId);
                        }
 
-                       category.getExpenses().add(expense);
-                       expense.getCategories().add(category);
+                       category.getExpenses()
+                               .add(expense);
+                       expense.getCategories()
+                              .add(category);
                    });
 
         categoryService.save(category);
@@ -177,8 +180,10 @@ public class CategoryController {
                            throw new ExpenseNotFoundException(expenseId);
                        }
 
-                       category.getExpenses().remove(expense);
-                       expense.getCategories().remove(category);
+                       category.getExpenses()
+                               .remove(expense);
+                       expense.getCategories()
+                              .remove(category);
                    });
 
 

@@ -22,7 +22,7 @@ class CategoryServiceTest {
     @Test
     public void testFindByID() {
        Long id = 1L;
-       Category category = new Category("Groceries");
+       Category category = Category.builder().tag("Groceries").build();
        when(categoryRepository.findById(id)).thenReturn(java.util.Optional.of(
                category));
 
@@ -33,9 +33,9 @@ class CategoryServiceTest {
     @Test
     public void testFindAll() {
         List<Category> categoryList =
-                List.of(new Category("Groceries"),
-                        new Category("Gas"),
-                        new Category("Internet"));
+                List.of(Category.builder().tag("Groceries").build(),
+                        Category.builder().tag("Gas").build(),
+                        Category.builder().tag("Internet").build());
 
         when(categoryRepository.findAll()).thenReturn(categoryList);
         List<Category> categoryList1 = categoryService.findAll();
@@ -45,7 +45,7 @@ class CategoryServiceTest {
     @Test
     public void testSave() {
         Long id = 1L;
-        Category categoryToSave = new Category("Test");
+        Category categoryToSave = Category.builder().tag("Test").build();
         categoryToSave.setId(id);
 
         when(categoryRepository.save(categoryToSave)).thenReturn(categoryToSave);

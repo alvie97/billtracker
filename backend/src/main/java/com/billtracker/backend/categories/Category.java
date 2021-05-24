@@ -1,8 +1,8 @@
 package com.billtracker.backend.categories;
 
 import com.billtracker.backend.expenses.Expense;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.server.core.Relation;
@@ -18,6 +18,7 @@ import java.util.Set;
 @Data
 @Builder
 @NoArgsConstructor
+@AllArgsConstructor
 @Relation(collectionRelation = "categories", itemRelation = "category")
 public class Category extends RepresentationModel<Category> {
 
@@ -31,6 +32,7 @@ public class Category extends RepresentationModel<Category> {
 
     @Column(name = "created_on")
     @JsonProperty("created_on")
+    @Builder.Default
     private Instant createdOn = Instant.now();
 
     @Column(name = "deleted_on")
@@ -44,5 +46,6 @@ public class Category extends RepresentationModel<Category> {
     @JsonIgnore
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
+    @Builder.Default
     private Set<Expense> expenses = new HashSet<>();
 }

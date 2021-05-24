@@ -11,7 +11,8 @@ public class ExpenseService {
     ExpenseRepository expenseRepository;
 
     public Expense findById(Long id) {
-        return expenseRepository.findById(id).orElse(null);
+        return expenseRepository.findById(id)
+                                .orElse(null);
     }
 
     public List<Expense> findAll() {
