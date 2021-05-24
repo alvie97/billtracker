@@ -165,7 +165,7 @@ public class CategoryController {
 
     @DeleteMapping("/categories/{id}/expenses")
     public SimpleResponse removeExpenseFromCategory(@PathVariable long id,
-                                                    @RequestBody CategoryExpensesRequest expensesIds) {
+                                                    @RequestBody @Valid CategoryExpensesRequest expensesIds) {
         Category category = categoryService.findById(id);
 
         if (category == null) {
