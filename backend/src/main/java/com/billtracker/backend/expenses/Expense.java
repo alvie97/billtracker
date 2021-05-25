@@ -28,6 +28,7 @@ public class Expense extends RepresentationModel<Expense> {
     private Long id;
 
     @NotBlank
+    @Size(max = 64)
     private String name;
 
     @Size(max = 512)
@@ -37,8 +38,8 @@ public class Expense extends RepresentationModel<Expense> {
     @NotNull
     private Double expense;
 
-    @Builder.Default
-    private Instant date = Instant.now();
+    @NotNull
+    private Instant date;
 
     @ManyToMany(mappedBy = "expenses")
     @JsonIgnore

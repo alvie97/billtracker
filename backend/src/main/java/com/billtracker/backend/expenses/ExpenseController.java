@@ -7,13 +7,11 @@ import com.billtracker.backend.utils.SimpleResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.http.HttpStatus;
-import org.springframework.util.ReflectionUtils;
+import org.springframework.validation.SmartValidator;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.lang.reflect.Field;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -25,6 +23,9 @@ public class ExpenseController {
 
     @Autowired
     ExpenseService expenseService;
+
+    @Autowired
+    SmartValidator validator;
 
     @GetMapping("/expenses")
     public CollectionModel<Expense> getAllExpenses() {
@@ -63,30 +64,22 @@ public class ExpenseController {
         return newExpense;
     }
 
-    @PatchMapping("/expenses/{id}")
-    public Expense updateExpense(@RequestBody Map<String, Object> expense, @PathVariable Long id) {
+    @PutMapping("/expenses/{id}")
+    public Expense updateExpense(@RequestBody @Valid Expense expense,
+                                 @PathVariable Long id) {
 
-        Expense expenseToUpdate = expenseService.findById(id);
-
-        if (expenseToUpdate == null) {
+        if (expenseService.findById(id) == null) {
             throw new ExpenseNotFoundException(id);
         }
 
-        expense.forEach((field, value) -> {
-            Field fieldToUpdate = ReflectionUtils.findField(Expense.class, field);
-            if (fieldToUpdate == null) {
-                throw new ExpenseIncorrectFieldException(field);
-            }
-            fieldToUpdate.setAccessible(true);
-            ReflectionUtils.setField(fieldToUpdate, expenseToUpdate, value);
-        });
-        expenseService.save(expenseToUpdate);
+        expense.setId(id);
+        Expense updatedExpense = expenseService.save(expense);
 
-        expenseToUpdate.add(linkTo(methodOn(ExpenseController.class).getExpense(expenseToUpdate.getId()))
-                                    .withSelfRel());
-        expenseToUpdate.add(linkTo(methodOn(ExpenseController.class).getAllExpenses()).withRel("expenses"));
+        updatedExpense.add(linkTo(methodOn(ExpenseController.class).getExpense(updatedExpense.getId()))
+                                   .withSelfRel());
+        updatedExpense.add(linkTo(methodOn(ExpenseController.class).getAllExpenses()).withRel("expenses"));
 
-        return expenseToUpdate;
+        return updatedExpense;
     }
 
     @DeleteMapping("/expenses/{id}")

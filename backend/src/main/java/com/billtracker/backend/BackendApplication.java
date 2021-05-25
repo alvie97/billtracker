@@ -9,6 +9,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
+import java.time.Instant;
+
 @SpringBootApplication
 public class BackendApplication {
     public static void main(String[] args) {
@@ -24,30 +26,36 @@ public class BackendApplication {
                                                   .name("Servicio Agua")
                                                   .description("Agua")
                                                   .expense(500.00)
+                                                  .date(Instant.now())
                                                   .build());
             expenseRepository.save(Expense.builder()
                                           .name("Servicio Gas")
                                           .description("Gas")
                                           .expense(500.00)
+                                          .date(Instant.now())
                                           .build());
             expenseRepository.save(Expense.builder()
                                           .name("Servicio Luz")
                                           .description("Luz")
                                           .expense(500.00)
+                                          .date(Instant.now())
                                           .build());
             expenseRepository.save(Expense.builder()
                                           .name("Internet")
                                           .description("Fibertel te odio")
                                           .expense(3000.00)
+                                          .date(Instant.now())
                                           .build());
             expenseRepository.save(Expense.builder()
                                           .name("Empanadas")
                                           .description("Ale traeme unas empanadas vale")
                                           .expense(1000.00)
+                                          .date(Instant.now())
                                           .build());
 
             Category category = Category.builder()
                                         .tag("Groceries")
+                                        .createdDate(Instant.now())
                                         .build();
             category.getExpenses()
                     .add(expense);
@@ -55,6 +63,7 @@ public class BackendApplication {
 
             Category internet = Category.builder()
                                         .tag("Internet")
+                                        .createdDate(Instant.now())
                                         .build();
             internet.getExpenses()
                     .add(expense);
@@ -62,6 +71,7 @@ public class BackendApplication {
 
             Category empanadas = Category.builder()
                                          .tag("Empanadas")
+                                         .createdDate(Instant.now())
                                          .build();
             empanadas.getExpenses()
                      .add(expense);

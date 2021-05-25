@@ -9,13 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.http.HttpStatus;
-import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.lang.reflect.Field;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -70,29 +67,21 @@ public class CategoryController {
         return newCategory;
     }
 
-    @PatchMapping("/categories/{id}")
-    public Category updateCategory(@RequestBody Map<String, Object> fields, @PathVariable Long id) {
-        Category category = categoryService.findById(id);
+    @PutMapping("/categories/{id}")
+    public Category updateCategory(@RequestBody @Valid Category category, @PathVariable Long id) {
 
-        if (category == null) {
+        if (categoryService.findById(id) == null) {
             throw new CategoryNotFoundException(id);
         }
 
-        fields.forEach((k, v) -> {
-            Field field = ReflectionUtils.findField(Category.class, k);
-            if (field == null) {
-                throw new CategoryIncorrectFieldException(k);
-            }
-            field.setAccessible(true);
-            ReflectionUtils.setField(field, category, v);
-        });
+        category.setId(id);
 
-        categoryService.save(category);
+        Category updatedCategory = categoryService.save(category);
 
-        category.add(linkTo(methodOn(CategoryController.class).getCategory(category.getId()))
-                             .withSelfRel());
-        category.add(linkTo(methodOn(CategoryController.class).getAllCategories()).withRel("categories"));
-        return category;
+        updatedCategory.add(linkTo(methodOn(CategoryController.class).getCategory(updatedCategory.getId()))
+                                    .withSelfRel());
+        updatedCategory.add(linkTo(methodOn(CategoryController.class).getAllCategories()).withRel("categories"));
+        return updatedCategory;
     }
 
     @DeleteMapping("/categories/{id}")

@@ -4,6 +4,7 @@ import com.billtracker.backend.expenses.Expense;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.server.core.Relation;
 
@@ -30,14 +31,10 @@ public class Category extends RepresentationModel<Category> {
     @Size(max = 64)
     private String tag;
 
-    @Column(name = "created_on")
+    @Column(nullable = false, updatable = false)
     @JsonProperty("created_on")
-    @Builder.Default
-    private Instant createdOn = Instant.now();
-
-    @Column(name = "deleted_on")
-    @JsonProperty("deleted_on")
-    private Instant deletedOn;
+    @CreatedDate
+    private Instant createdDate;
 
     @JoinTable(name = "category_expense",
             joinColumns = {@JoinColumn(name = "category_id")},

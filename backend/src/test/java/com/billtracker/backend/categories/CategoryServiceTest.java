@@ -21,13 +21,13 @@ class CategoryServiceTest {
 
     @Test
     public void testFindByID() {
-       Long id = 1L;
-       Category category = Category.builder().tag("Groceries").build();
-       when(categoryRepository.findById(id)).thenReturn(java.util.Optional.of(
-               category));
+        Long id = 1L;
+        Category category = Category.builder().tag("Groceries").build();
+        when(categoryRepository.findById(id)).thenReturn(java.util.Optional.of(
+                category));
 
-       Category retCategory = categoryService.findById(id);
-       assertEquals(category, retCategory);
+        Category retCategory = categoryService.findById(id);
+        assertEquals(category, retCategory);
     }
 
     @Test

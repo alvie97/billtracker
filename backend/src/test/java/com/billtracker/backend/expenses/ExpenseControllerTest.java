@@ -3,6 +3,7 @@ package com.billtracker.backend.expenses;
 import com.billtracker.backend.categories.Category;
 import com.billtracker.backend.categories.CategoryController;
 import com.billtracker.backend.categories.CategoryRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,21 +30,18 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @WebMvcTest(ExpenseController.class)
 class ExpenseControllerTest {
 
+    private final String API_BASE_PATH = "http://localhost";
     @MockBean
     private ExpenseService expenseService;
-
     @MockBean
     private ExpenseRepository expenseRepository;
-
     @MockBean
     private CategoryRepository categoryRepository;
-
     @Autowired
     private MockMvc mockMvc;
-
+    @Autowired
+    private ObjectMapper objectMapper;
     private List<Expense> expenseList;
-
-    private final String API_BASE_PATH = "http://localhost";
 
     @BeforeEach
     void setup() {
@@ -55,6 +54,7 @@ class ExpenseControllerTest {
                                                 "Test expense " + i)
                                         .description("Test expense " + i + " desc")
                                         .expense(i * 100 + 1.0)
+                                        .date(Instant.now())
                                         .build());
         }
     }
@@ -155,7 +155,7 @@ class ExpenseControllerTest {
         Expense expense = this.expenseList.get(0);
         when(this.expenseService.save(any(Expense.class))).thenReturn(expense);
 
-        String selfLink = API_BASE_PATH + linkTo(methodOn(ExpenseController.class).getExpense(null))
+        String selfLink = API_BASE_PATH + linkTo(methodOn(ExpenseController.class).getExpense(expense.getId()))
                 .withSelfRel()
                 .getHref();
 
@@ -166,11 +166,7 @@ class ExpenseControllerTest {
         MockHttpServletRequestBuilder post_request =
                 MockMvcRequestBuilders.post("/api/expenses")
                                       .contentType(MediaType.APPLICATION_JSON)
-                                      .content(String.format(
-                                              "{\"name\": \"%s\", \"description\": \"%s\", \"expense\": %f}",
-                                              expense.getName(),
-                                              expense.getDescription(),
-                                              expense.getExpense()));
+                                      .content(objectMapper.writeValueAsString(expense));
         this.mockMvc.perform(post_request)
                     .andExpect(MockMvcResultMatchers.status()
                                                     .isCreated())
@@ -197,8 +193,16 @@ class ExpenseControllerTest {
         long expenseId = expense.getId();
         when(this.expenseService.findById(expenseId)).thenReturn(expense);
 
-        String newExpenseDescription = "test description";
-        double newExpenseExpense = 1337.0;
+        String newDescription = "test description";
+        Double newExpense = 1337.0;
+        Expense updatedExpense = Expense.builder()
+                                        .id(expense.getId())
+                                        .name(expense.getName())
+                                        .description(newDescription)
+                                        .expense(newExpense)
+                                        .date(expense.getDate())
+                                        .build();
+        when(this.expenseService.save(any(Expense.class))).thenReturn(updatedExpense);
 
         String selfLink = API_BASE_PATH + linkTo(methodOn(ExpenseController.class).getExpense(expenseId))
                 .withSelfRel()
@@ -208,14 +212,12 @@ class ExpenseControllerTest {
                 .withSelfRel()
                 .getHref();
 
-        MockHttpServletRequestBuilder patch_request =
-                MockMvcRequestBuilders.patch("/api/expenses/" + expenseId)
+        MockHttpServletRequestBuilder put_request =
+                MockMvcRequestBuilders.put("/api/expenses/" + expenseId)
                                       .contentType(MediaType.APPLICATION_JSON)
-                                      .content(String.format("{\"description\": \"%s\", \"expense\": %f}",
-                                                             newExpenseDescription,
-                                                             newExpenseExpense));
+                                      .content(objectMapper.writeValueAsString(updatedExpense));
 
-        this.mockMvc.perform(patch_request)
+        this.mockMvc.perform(put_request)
                     .andExpect(MockMvcResultMatchers.status()
                                                     .isOk())
                     .andExpect(MockMvcResultMatchers.jsonPath("$.id")
@@ -223,9 +225,9 @@ class ExpenseControllerTest {
                     .andExpect(MockMvcResultMatchers.jsonPath("$.name")
                                                     .value(expense.getName()))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.description")
-                                                    .value(newExpenseDescription))
+                                                    .value(newDescription))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.expense")
-                                                    .value(newExpenseExpense))
+                                                    .value(newExpense))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.date")
                                                     .value(expense.getDate()
                                                                   .toString()))
@@ -241,9 +243,9 @@ class ExpenseControllerTest {
         when(this.expenseService.findById(notFoundId)).thenReturn(null);
 
         MockHttpServletRequestBuilder patch_request =
-                MockMvcRequestBuilders.patch("/api/expenses/" + notFoundId)
+                MockMvcRequestBuilders.put("/api/expenses/" + notFoundId)
                                       .contentType(MediaType.APPLICATION_JSON)
-                                      .content("{}");
+                                      .content(objectMapper.writeValueAsString(this.expenseList.get(0)));
 
         String expenseLink = API_BASE_PATH + linkTo(methodOn(ExpenseController.class).getAllExpenses())
                 .withSelfRel()
@@ -270,19 +272,13 @@ class ExpenseControllerTest {
         String field = "asdfasdf";
 
         MockHttpServletRequestBuilder patch_request =
-                MockMvcRequestBuilders.patch("/api/expenses/" + notFoundId)
+                MockMvcRequestBuilders.put("/api/expenses/" + notFoundId)
                                       .contentType(MediaType.APPLICATION_JSON)
                                       .content(String.format("{\"description\": \"%s\", \"%s\": %f}",
                                                              newExpenseDescription,
                                                              field,
                                                              newExpenseExpense));
-        this.mockMvc.perform(patch_request)
-                    .andExpect(MockMvcResultMatchers.status()
-                                                    .isBadRequest())
-                    .andExpect(MockMvcResultMatchers.jsonPath("$.message")
-                                                    .value("Incorrect field: " + field))
-                    .andExpect(MockMvcResultMatchers.jsonPath("$._links")
-                                                    .doesNotExist());
+        this.mockMvc.perform(patch_request).andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
     @Test
@@ -302,8 +298,8 @@ class ExpenseControllerTest {
                                                     .isOk())
                     .andExpect(MockMvcResultMatchers.jsonPath("$.message")
                                                     .value("Deleted expense with id "
-                                                           + expenseId
-                                                           + " successfully"))
+                                                                   + expenseId
+                                                                   + " successfully"))
                     .andExpect(MockMvcResultMatchers.jsonPath("$._links.expenses.href")
                                                     .value(expenseLink));
 
@@ -325,8 +321,8 @@ class ExpenseControllerTest {
                                                     .isOk())
                     .andExpect(MockMvcResultMatchers.jsonPath("$.message")
                                                     .value("Deleted expense with id "
-                                                           + notFound
-                                                           + " successfully"))
+                                                                   + notFound
+                                                                   + " successfully"))
                     .andExpect(MockMvcResultMatchers.jsonPath("$._links.expenses.href")
                                                     .value(expenseLink));
     }
@@ -338,6 +334,7 @@ class ExpenseControllerTest {
         for (int i = 0; i < 3; i++) {
             Category auxCategory = Category.builder()
                                            .tag("test " + i)
+                                           .createdDate(Instant.now())
                                            .build();
             auxCategory.setId((long) i);
             expense.getCategories()
@@ -368,10 +365,8 @@ class ExpenseControllerTest {
             resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories[" + i + "].tag")
                                                          .value(category.getTag()));
             resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories[" + i + "].created_on")
-                                                         .value(category.getCreatedOn()
+                                                         .value(category.getCreatedDate()
                                                                         .toString()));
-            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories[" + i + "].deleted_on")
-                                                         .isEmpty());
 
             Link link = linkTo(methodOn(CategoryController.class).getCategory(category.getId())).withSelfRel();
             resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories[" + i + "]._links.self.href")

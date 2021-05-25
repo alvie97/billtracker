@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,24 +32,20 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @WebMvcTest(CategoryController.class)
 class CategoryControllerTest {
 
+    private final String API_BASE_PATH = "http://localhost";
     @MockBean
     private CategoryService categoryService;
-
     @MockBean
     private CategoryRepository categoryRepository;
-
     @MockBean
     private ExpenseService expenseService;
-
     @MockBean
     private ExpenseRepository expenseRepository;
-
     @Autowired
     private MockMvc mockMvc;
-
+    @Autowired
+    private ObjectMapper objectMapper;
     private List<Category> categoryList;
-
-    private final String API_BASE_PATH = "http://localhost";
 
     @BeforeEach
     void setup() {
@@ -56,10 +53,10 @@ class CategoryControllerTest {
 
         for (int i = 0; i < 10; ++i) {
             this.categoryList.add(Category.builder()
+                                          .id((long) i)
                                           .tag("Test category " + i)
+                                          .createdDate(Instant.now())
                                           .build());
-            this.categoryList.get(i)
-                             .setId((long) i);
         }
     }
 
@@ -83,10 +80,8 @@ class CategoryControllerTest {
                                                                                  .getTag()));
             resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories[" + i + "].created_on")
                                                          .value(this.categoryList.get(i)
-                                                                                 .getCreatedOn()
+                                                                                 .getCreatedDate()
                                                                                  .toString()));
-            resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._embedded.categories[" + i + "].deleted_on")
-                                                         .isEmpty());
 
             Link link = linkTo(methodOn(CategoryController.class).getCategory(this.categoryList.get(i)
                                                                                                .getId())).withSelfRel();
@@ -120,10 +115,8 @@ class CategoryControllerTest {
                     .andExpect(MockMvcResultMatchers.jsonPath("$.tag")
                                                     .value(category.getTag()))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.created_on")
-                                                    .value(category.getCreatedOn()
+                                                    .value(category.getCreatedDate()
                                                                    .toString()))
-                    .andExpect(MockMvcResultMatchers.jsonPath("$.deleted_on")
-                                                    .isEmpty())
                     .andExpect(MockMvcResultMatchers.jsonPath("$._links.self.href")
                                                     .value(selfLink))
                     .andExpect(MockMvcResultMatchers.jsonPath("$._links.categories.href")
@@ -174,10 +167,8 @@ class CategoryControllerTest {
                     .andExpect(MockMvcResultMatchers.jsonPath("$.tag")
                                                     .value(category.getTag()))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.created_on")
-                                                    .value(category.getCreatedOn()
+                                                    .value(category.getCreatedDate()
                                                                    .toString()))
-                    .andExpect(MockMvcResultMatchers.jsonPath("$.deleted_on")
-                                                    .isEmpty())
                     .andExpect(MockMvcResultMatchers.jsonPath("$._links.self.href")
                                                     .value(selfLink))
                     .andExpect(MockMvcResultMatchers.jsonPath("$._links.categories.href")
@@ -191,6 +182,11 @@ class CategoryControllerTest {
         when(this.categoryService.findById(categoryId)).thenReturn(category);
 
         String newCategoryTag = "test description test update";
+        when(this.categoryService.save(any(Category.class))).thenReturn(Category.builder()
+                                                                                .id(category.getId())
+                                                                                .tag(newCategoryTag)
+                                                                                .createdDate(category.getCreatedDate())
+                                                                                .build());
 
         String selfLink = API_BASE_PATH + linkTo(methodOn(CategoryController.class).getCategory(categoryId))
                 .withSelfRel()
@@ -200,23 +196,18 @@ class CategoryControllerTest {
                 .withSelfRel()
                 .getHref();
 
-        MockHttpServletRequestBuilder patch_request =
-                MockMvcRequestBuilders.patch("/api/categories/" + categoryId)
+        MockHttpServletRequestBuilder put_request =
+                MockMvcRequestBuilders.put("/api/categories/" + categoryId)
                                       .contentType(MediaType.APPLICATION_JSON)
                                       .content(String.format("{\"tag\": \"%s\"}", newCategoryTag));
 
-        this.mockMvc.perform(patch_request)
+        this.mockMvc.perform(put_request)
                     .andExpect(MockMvcResultMatchers.status()
                                                     .isOk())
                     .andExpect(MockMvcResultMatchers.jsonPath("$.id")
                                                     .value(category.getId()))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.tag")
                                                     .value(newCategoryTag))
-                    .andExpect(MockMvcResultMatchers.jsonPath("$.created_on")
-                                                    .value(category.getCreatedOn()
-                                                                   .toString()))
-                    .andExpect(MockMvcResultMatchers.jsonPath("$.deleted_on")
-                                                    .isEmpty())
                     .andExpect(MockMvcResultMatchers.jsonPath("$._links.self.href")
                                                     .value(selfLink))
                     .andExpect(MockMvcResultMatchers.jsonPath("$._links.categories.href")
@@ -228,16 +219,16 @@ class CategoryControllerTest {
         long notFoundId = 9999;
         when(this.categoryService.findById(notFoundId)).thenReturn(null);
 
-        MockHttpServletRequestBuilder patch_request =
-                MockMvcRequestBuilders.patch("/api/categories/" + notFoundId)
+        MockHttpServletRequestBuilder put_request =
+                MockMvcRequestBuilders.put("/api/categories/" + notFoundId)
                                       .contentType(MediaType.APPLICATION_JSON)
-                                      .content("{}");
+                                      .content(objectMapper.writeValueAsString(this.categoryList.get(0)));
 
         String categoryLink = API_BASE_PATH + linkTo(methodOn(CategoryController.class).getAllCategories())
                 .withSelfRel()
                 .getHref();
 
-        this.mockMvc.perform(patch_request)
+        this.mockMvc.perform(put_request)
                     .andExpect(MockMvcResultMatchers.status()
                                                     .isNotFound())
                     .andExpect(MockMvcResultMatchers.jsonPath("$.message")
@@ -254,17 +245,11 @@ class CategoryControllerTest {
 
         String field = "asdfasdf";
 
-        MockHttpServletRequestBuilder patch_request =
-                MockMvcRequestBuilders.patch("/api/categories/" + id)
+        MockHttpServletRequestBuilder put_request =
+                MockMvcRequestBuilders.put("/api/categories/" + id)
                                       .contentType(MediaType.APPLICATION_JSON)
                                       .content(String.format("{\"%s\": \"Test incorrect field\"}", field));
-        this.mockMvc.perform(patch_request)
-                    .andExpect(MockMvcResultMatchers.status()
-                                                    .isBadRequest())
-                    .andExpect(MockMvcResultMatchers.jsonPath("$.message")
-                                                    .value("Incorrect field: " + field))
-                    .andExpect(MockMvcResultMatchers.jsonPath("$._links.categories.href")
-                                                    .doesNotExist());
+        this.mockMvc.perform(put_request).andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
     @Test
@@ -284,8 +269,8 @@ class CategoryControllerTest {
                                                     .isOk())
                     .andExpect(MockMvcResultMatchers.jsonPath("$.message")
                                                     .value("Deleted category with id "
-                                                           + categoryId
-                                                           + " successfully"))
+                                                                   + categoryId
+                                                                   + " successfully"))
                     .andExpect(MockMvcResultMatchers.jsonPath("$._links.categories.href")
                                                     .value(categoryLink));
 
@@ -320,6 +305,7 @@ class CategoryControllerTest {
                                         .id((long) i)
                                         .name("test " + i)
                                         .description("test desc " + i)
+                                        .date(Instant.now())
                                         .expense((double) i)
                                         .build();
             category.getExpenses()
@@ -363,7 +349,8 @@ class CategoryControllerTest {
         }
 
         Link selfLink = linkTo(methodOn(CategoryController.class).getCategoryExpenses(category.getId())).withSelfRel();
-        Link categoryLink = linkTo(methodOn(CategoryController.class).getCategory(category.getId())).withRel("category");
+        Link categoryLink = linkTo(methodOn(CategoryController.class).getCategory(category.getId())).withRel(
+                "category");
         Link expensesLink = linkTo(methodOn(ExpenseController.class).getAllExpenses()).withRel("expenses");
 
         resultActions.andExpect(MockMvcResultMatchers.jsonPath("$._links.self.href")
@@ -392,7 +379,12 @@ class CategoryControllerTest {
         List<Expense> expenses = new ArrayList<>();
 
         for (long i = 0; i < 3; i++) {
-            Expense expense = Expense.builder().id(i).name("test" + i).description("test desc " + i).expense((double) i).build();
+            Expense expense = Expense.builder()
+                                     .id(i)
+                                     .name("test" + i)
+                                     .description("test desc " + i)
+                                     .expense((double) i)
+                                     .build();
             when(expenseService.findById(i)).thenReturn(expense);
             expenses.add(expense);
         }
@@ -460,7 +452,12 @@ class CategoryControllerTest {
         when(categoryService.findById(category.getId())).thenReturn(category);
 
         for (long i = 0; i < 3; i++) {
-            Expense expense = Expense.builder().id(i).name("test "+  i).description("test desc " + i).expense((double) i).build();
+            Expense expense = Expense.builder()
+                                     .id(i)
+                                     .name("test " + i)
+                                     .description("test desc " + i)
+                                     .expense((double) i)
+                                     .build();
             when(expenseService.findById(i)).thenReturn(expense);
             category.getExpenses()
                     .add(expense);
