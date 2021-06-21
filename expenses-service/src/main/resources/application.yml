@@ -1,0 +1,14 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: expenses-service
+
+eureka:
+  client:
+    enabled: false
+
+feign:
+  circuitbreaker:
+    enabled: true

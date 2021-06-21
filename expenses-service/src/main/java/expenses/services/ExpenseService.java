@@ -1,16 +1,24 @@
 package expenses.services;
 
+import expenses.clients.CategoryClient;
 import expenses.entities.Expense;
+import expenses.models.CategoryModel;
 import expenses.repositories.ExpenseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ExpenseService {
     @Autowired
     ExpenseRepository expenseRepository;
+
+    @Autowired
+    CategoryClient categoryClient;
 
     public Expense findById(Long id) {
         return expenseRepository.findById(id)
@@ -27,5 +35,12 @@ public class ExpenseService {
 
     public void delete(Long id) {
         expenseRepository.deleteById(id);
+    }
+
+    public List<CategoryModel> getExpenseCategories(Expense expense) {
+        return expense.getCategoriesIds()
+                                         .stream()
+                                         .map(id -> categoryClient.getCategory(id).getContent())
+                                         .collect(Collectors.toList());
     }
 }

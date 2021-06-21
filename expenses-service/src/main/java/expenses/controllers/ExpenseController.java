@@ -1,10 +1,9 @@
 package expenses.controllers;
 
-import com.billtracker.backend.categories.Category;
-import com.billtracker.backend.categories.CategoryController;
 import expenses.advices.SimpleResponse;
 import expenses.entities.Expense;
 import expenses.exceptions.ExpenseNotFoundException;
+import expenses.models.CategoryModel;
 import expenses.services.ExpenseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
@@ -93,7 +92,7 @@ public class ExpenseController {
     }
 
     @GetMapping("/expenses/{id}/categories")
-    public CollectionModel<Category> getExpenseCategories(@PathVariable long id) {
+    public CollectionModel<CategoryModel> getExpenseCategories(@PathVariable long id) {
 
         Expense expense = expenseService.findById(id);
 
@@ -101,18 +100,10 @@ public class ExpenseController {
             throw new ExpenseNotFoundException(id);
         }
 
-        List<Category> categories =
-                expense.getCategories()
-                       .stream()
-                       .map(category -> category.add(
-                               linkTo(methodOn(CategoryController.class)
-                                              .getCategory(category.getId()))
-                                       .withSelfRel()))
-                       .collect(Collectors.toList());
+        List<CategoryModel> categories = expenseService.getExpenseCategories(expense);
 
         return CollectionModel.of(categories,
                                   linkTo(methodOn(ExpenseController.class).getExpenseCategories(id)).withSelfRel(),
-                                  linkTo(methodOn(ExpenseController.class).getExpense(id)).withRel("expense"),
-                                  linkTo(methodOn(CategoryController.class).getAllCategories()).withRel("categories"));
+                                  linkTo(methodOn(ExpenseController.class).getExpense(id)).withRel("expense"));
     }
 }
