@@ -6,9 +6,12 @@ spring:
     name: expenses-service
 
 eureka:
+  server:
+    port: 8760
+    hostname: localhost
   client:
-    enabled: false
-
+    service-url:
+      defaultZone: http://${eureka.server.hostname}:${eureka.server.port}/eureka/
 feign:
   circuitbreaker:
     enabled: true

@@ -6,9 +6,9 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(name = "category-service", url = "http://localhost:8082/api", fallback = CategoryFallback.class)
+@FeignClient(name = "category-service", fallback = CategoryFallback.class)
 public interface CategoryClient {
 
-    @GetMapping("/categories/{id}")
+    @GetMapping("/api/categories/{id}")
     EntityModel<CategoryModel> getCategory(@PathVariable Long id);
 }
