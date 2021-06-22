@@ -1,0 +1,18 @@
+server:
+  port: 8082
+
+
+eureka:
+  client:
+    enabled: false
+feign:
+  circuitbreaker:
+    enabled: true
+
+spring:
+  cloud:
+    config:
+      enabled: false
+  application:
+    name: category-service
+
