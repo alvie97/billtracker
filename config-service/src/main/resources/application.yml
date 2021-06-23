@@ -7,7 +7,7 @@ spring:
     config:
       server:
         git:
-          uri: file://${user.home}/Projects/billtracker
+          uri: https://github.com/alvie97/billtracker.git
           search-paths:
             - config-data
           default-label: "refactor-microservices"
