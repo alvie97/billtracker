@@ -1,17 +1,5 @@
-server:
-  port: 8081
-
 spring:
   application:
     name: expenses-service
-
-eureka:
-  server:
-    port: 8760
-    hostname: localhost
-  client:
-    service-url:
-      defaultZone: http://${eureka.server.hostname}:${eureka.server.port}/eureka/
-feign:
-  circuitbreaker:
-    enabled: true
+  config:
+    import: optional:configserver:http://localhost:8888/
