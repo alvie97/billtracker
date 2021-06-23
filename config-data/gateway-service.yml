@@ -1,0 +1,12 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: category-service
+          uri: lb://category-service
+          predicates:
+            - Path=/api/categories/**
+        - id: expenses-service
+          uri: lb://expenses-service
+          predicates:
+            - Path=/api/expenses/**
