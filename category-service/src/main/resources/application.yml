@@ -3,3 +3,10 @@ spring:
     name: category-service
   config:
     import: optional:configserver:http://localhost:8888/
+  cloud:
+    stream:
+      bindings:
+        categoryExpensesAdded-out-0:
+          destination: category-events
+        categoryExpensesRemoved-out-0:
+          destination: category-events

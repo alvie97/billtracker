@@ -10,8 +10,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
 
+import java.lang.reflect.Array;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 @SpringBootApplication
@@ -38,26 +40,31 @@ public class ExpensesServiceApplication {
     }
 
     @Bean
-    public Consumer<CategoryExpensesEvent> categoryExpensesAdded(ExpenseService expenseService) {
+    public Consumer<Map<String, Object>> categoryExpensesAdded(ExpenseService expenseService) {
         return categoryExpensesEvent -> {
             System.out.println("expenses added: " + categoryExpensesEvent.toString());
-            categoryExpensesEvent.getExpensesIds().forEach(id -> {
+            List<Long> expensesIds = (List<Long>) categoryExpensesEvent.get("expensesIds");
+            Long categoryId = (Long) categoryExpensesEvent.get("categoryId");
+
+            expensesIds.forEach(id -> {
                 Expense expense = expenseService.findById(id);
                 if (expense != null) {
-                    expense.getCategoriesIds().add(categoryExpensesEvent.categoryId);
+                    expense.getCategoriesIds().add(categoryId);
                 }
             });
         };
     }
 
     @Bean
-    public Consumer<CategoryExpensesEvent> categoryExpensesRemoved(ExpenseService expenseService) {
+    public Consumer<Map<String, Object>> categoryExpensesRemoved(ExpenseService expenseService) {
         return categoryExpensesEvent -> {
             System.out.println("expenses removed: " + categoryExpensesEvent.toString());
-            categoryExpensesEvent.getExpensesIds().forEach(id -> {
+            List<Long> expensesIds = (List<Long>) categoryExpensesEvent.get("expensesIds");
+            Long categoryId = (Long) categoryExpensesEvent.get("categoryId");
+            expensesIds.forEach(id -> {
                 Expense expense = expenseService.findById(id);
                 if (expense != null) {
-                    expense.getCategoriesIds().remove(categoryExpensesEvent.categoryId);
+                    expense.getCategoriesIds().remove(categoryId);
                 }
             });
         };

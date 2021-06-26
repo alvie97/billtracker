@@ -3,3 +3,10 @@ spring:
     name: expenses-service
   config:
     import: optional:configserver:http://localhost:8888/
+  cloud:
+    stream:
+      bindings:
+        categoryExpensesAdded-in-0:
+          destination: category-events
+        categoryExpensesRemoved-in-0:
+          destination: category-events
