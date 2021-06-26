@@ -32,12 +32,4 @@ public class CategoryServiceApplication {
             repository.save(category);
         };
     }
-
-    @Bean
-    public Consumer<List<Long>> categoryEventSupplier() {
-        return msg -> {
-            System.out.println(msg.toString());
-        };
-    }
-
 }

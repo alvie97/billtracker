@@ -14,7 +14,7 @@ spring:
   cloud:
     stream:
       bindings:
-        - categoryExpensesAdded-in-0:
-            destination: category-events
-        - categoryExpensesRemoved-in-0:
-            destination: category-events
+        categoryExpensesAdded-in-0:
+          destination: category-events
+        categoryExpensesRemoved-in-0:
+          destination: category-events
