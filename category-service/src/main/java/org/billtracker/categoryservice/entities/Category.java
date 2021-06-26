@@ -12,7 +12,9 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @EqualsAndHashCode(callSuper = false)
 @Entity
@@ -41,5 +43,5 @@ public class Category extends RepresentationModel<Category> {
     @ToString.Exclude
     @Builder.Default
     @ElementCollection
-    private List<Long> expensesIds = new ArrayList<>();
+    private Set<Long> expensesIds = new HashSet<>();
 }

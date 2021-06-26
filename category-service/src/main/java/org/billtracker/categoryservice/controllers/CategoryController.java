@@ -6,13 +6,16 @@ import org.billtracker.categoryservice.exceptions.CategoryNotFoundException;
 import org.billtracker.categoryservice.models.ExpenseModel;
 import org.billtracker.categoryservice.services.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -25,6 +28,9 @@ public class CategoryController {
 
     @Autowired
     CategoryService categoryService;
+
+    @Autowired
+    StreamBridge streamBridge;
 
     @GetMapping("/categories")
     public CollectionModel<Category> getAllCategories() {
@@ -114,66 +120,53 @@ public class CategoryController {
                                   linkTo(methodOn(CategoryController.class).getCategory(id)).withRel("category"));
     }
 
-//    @PostMapping("/categories/{id}/expenses")
-//    public SimpleResponse addExpenseToCategory(@PathVariable long id,
-//                                               @RequestBody @Valid CategoryExpensesRequest expensesIds) {
-//        Category category = categoryService.findById(id);
-//
-//        if (category == null) {
-//            throw new CategoryNotFoundException(id);
-//        }
-//
-//        expensesIds.getExpensesIds()
-//                   .forEach(expenseId -> {
-//                       Expense expense = expenseService.findById(expenseId);
-//
-//                       if (expense == null) {
-//                           throw new ExpenseNotFoundException(expenseId);
-//                       }
-//
-//                       category.getExpenses()
-//                               .add(expense);
-//                       expense.getCategories()
-//                              .add(category);
-//                   });
-//
-//        categoryService.save(category);
-//
-//        SimpleResponse simpleResponse = new SimpleResponse("expenses added to category successfully");
-//        simpleResponse.add(linkTo(methodOn(CategoryController.class).getCategoryExpenses(id)).withRel("expenses"));
-//
-//        return simpleResponse;
-//    }
-//
-//    @DeleteMapping("/categories/{id}/expenses")
-//    public SimpleResponse removeExpenseFromCategory(@PathVariable long id,
-//                                                    @RequestBody @Valid CategoryExpensesRequest expensesIds) {
-//        Category category = categoryService.findById(id);
-//
-//        if (category == null) {
-//            throw new CategoryNotFoundException(id);
-//        }
-//
-//        expensesIds.getExpensesIds()
-//                   .forEach(expenseId -> {
-//                       Expense expense = expenseService.findById(expenseId);
-//
-//                       if (expense == null) {
-//                           throw new ExpenseNotFoundException(expenseId);
-//                       }
-//
-//                       category.getExpenses()
-//                               .remove(expense);
-//                       expense.getCategories()
-//                              .remove(category);
-//                   });
-//
-//
-//        categoryService.save(category);
-//
-//        SimpleResponse simpleResponse = new SimpleResponse("expenses removed from category successfully");
-//        simpleResponse.add(linkTo(methodOn(CategoryController.class).getCategoryExpenses(id)).withRel("expenses"));
-//
-//        return simpleResponse;
-//    }
+    @PostMapping("/categories/{id}/expenses")
+    public SimpleResponse addExpenseToCategory(@PathVariable long id,
+                                               @RequestBody @Valid CategoryExpensesRequest expensesIds) {
+        Category category = categoryService.findById(id);
+
+        if (category == null) {
+            throw new CategoryNotFoundException(id);
+        }
+
+        category.getExpensesIds().addAll(expensesIds.getExpensesIds());
+
+        categoryService.save(category);
+
+        Map<String, Object> msg = new HashMap<>();
+        msg.put("categoryId", category.getId());
+        msg.put("expensesIds", expensesIds.getExpensesIds());
+
+        streamBridge.send("categoryExpensesAdded-out-0", msg);
+
+        SimpleResponse simpleResponse = new SimpleResponse("expenses added to category successfully");
+        simpleResponse.add(linkTo(methodOn(CategoryController.class).getCategoryExpenses(id)).withRel("expenses"));
+
+        return simpleResponse;
+    }
+
+    @DeleteMapping("/categories/{id}/expenses")
+    public SimpleResponse removeExpenseFromCategory(@PathVariable long id,
+                                                    @RequestBody @Valid CategoryExpensesRequest expensesIds) {
+        Category category = categoryService.findById(id);
+
+        if (category == null) {
+            throw new CategoryNotFoundException(id);
+        }
+
+        expensesIds.getExpensesIds().forEach(category.getExpensesIds()::remove);
+        categoryService.save(category);
+
+        Map<String, Object> msg = new HashMap<>();
+        msg.put("categoryId", category.getId());
+        msg.put("expensesIds", expensesIds.getExpensesIds());
+
+        streamBridge.send("categoryExpensesRemoved-out-0", msg);
+
+
+        SimpleResponse simpleResponse = new SimpleResponse("expenses removed from category successfully");
+        simpleResponse.add(linkTo(methodOn(CategoryController.class).getCategoryExpenses(id)).withRel("expenses"));
+
+        return simpleResponse;
+    }
 }
