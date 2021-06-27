@@ -46,23 +46,14 @@ public class ExpensesServiceApplication {
     public Consumer<CategoryEvent> categoryExpensesAdded(ExpenseService expenseService) {
         return categoryExpensesEvent -> {
             System.out.println("expenses added: " + categoryExpensesEvent.toString());
-            expenseService.addCategoryToExpenses(categoryExpensesEvent.getCategoryId(),
-                                                 categoryExpensesEvent.getExpensesIds());
+            try {
+                expenseService.addCategoryToExpenses(categoryExpensesEvent.getCategoryId(),
+                                                     categoryExpensesEvent.getExpensesIds());
+            } catch (org.hibernate.LazyInitializationException e) {
+               e.printStackTrace(); 
+            }
         };
     }
-
-//    @Bean
-//    public Consumer<categoryEvent> categoryExpensesRemoved() {
-//        return categoryExpensesEvent -> {
-//            System.out.println("expenses removed: " + categoryExpensesEvent.toString());
-//            categoryExpensesEvent.getExpensesIds().forEach(id -> {
-//                Expense expense = expenseService.findById(id);
-//                if (expense != null) {
-//                    expense.getCategoriesIds().remove(categoryExpensesEvent.getCategoryId());
-//                }
-//            });
-//        };
-//    }
 
 }
 @Data

@@ -10,3 +10,11 @@ eureka:
 feign:
   circuitbreaker:
     enabled: true
+spring:
+  cloud:
+    stream:
+      bindings:
+        categoryExpensesAdded-in-0:
+          destination: categoryExpensesAdded-events
+#        categoryExpensesRemoved-in-0:
+#          destination: categoryExpensesRemoved-events

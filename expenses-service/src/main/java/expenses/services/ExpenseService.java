@@ -9,6 +9,7 @@ import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -46,11 +47,12 @@ public class ExpenseService {
                                          .collect(Collectors.toList());
     }
 
+    @Transactional
     public void addCategoryToExpenses(Long categoryId, List<Long> expensesIds) {
         expensesIds.forEach(id -> {
             Expense expense = findById(id);
             if (expense != null) {
-                System.out.println(expense.getCategoriesIds().toString());
+                expense.getCategoriesIds().add(categoryId);
                 save(expense);
             }
         });
