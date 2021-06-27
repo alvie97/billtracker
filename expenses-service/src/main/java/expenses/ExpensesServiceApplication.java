@@ -4,11 +4,13 @@ import expenses.entities.Expense;
 import expenses.repositories.ExpenseRepository;
 import expenses.services.ExpenseService;
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
+import org.springframework.messaging.Message;
 
 import java.lang.reflect.Array;
 import java.time.Instant;
@@ -39,41 +41,32 @@ public class ExpensesServiceApplication {
         };
     }
 
+
     @Bean
-    public Consumer<Map<String, Object>> categoryExpensesAdded(ExpenseService expenseService) {
+    public Consumer<CategoryEvent> categoryExpensesAdded(ExpenseService expenseService) {
         return categoryExpensesEvent -> {
             System.out.println("expenses added: " + categoryExpensesEvent.toString());
-            List<Long> expensesIds = (List<Long>) categoryExpensesEvent.get("expensesIds");
-            Long categoryId = (Long) categoryExpensesEvent.get("categoryId");
-
-            expensesIds.forEach(id -> {
-                Expense expense = expenseService.findById(id);
-                if (expense != null) {
-                    expense.getCategoriesIds().add(categoryId);
-                }
-            });
+            expenseService.addCategoryToExpenses(categoryExpensesEvent.getCategoryId(),
+                                                 categoryExpensesEvent.getExpensesIds());
         };
     }
 
-    @Bean
-    public Consumer<Map<String, Object>> categoryExpensesRemoved(ExpenseService expenseService) {
-        return categoryExpensesEvent -> {
-            System.out.println("expenses removed: " + categoryExpensesEvent.toString());
-            List<Long> expensesIds = (List<Long>) categoryExpensesEvent.get("expensesIds");
-            Long categoryId = (Long) categoryExpensesEvent.get("categoryId");
-            expensesIds.forEach(id -> {
-                Expense expense = expenseService.findById(id);
-                if (expense != null) {
-                    expense.getCategoriesIds().remove(categoryId);
-                }
-            });
-        };
-    }
+//    @Bean
+//    public Consumer<categoryEvent> categoryExpensesRemoved() {
+//        return categoryExpensesEvent -> {
+//            System.out.println("expenses removed: " + categoryExpensesEvent.toString());
+//            categoryExpensesEvent.getExpensesIds().forEach(id -> {
+//                Expense expense = expenseService.findById(id);
+//                if (expense != null) {
+//                    expense.getCategoriesIds().remove(categoryExpensesEvent.getCategoryId());
+//                }
+//            });
+//        };
+//    }
 
-    @Data
-    static
-    class CategoryExpensesEvent {
-        Long categoryId;
-        List<Long> expensesIds;
-    }
+}
+@Data
+class CategoryEvent {
+    Long categoryId;
+    List<Long> expensesIds;
 }

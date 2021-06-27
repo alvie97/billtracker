@@ -9,7 +9,9 @@ import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,5 +44,15 @@ public class ExpenseService {
                                          .stream()
                                          .map(id -> categoryClient.getCategory(id).getContent())
                                          .collect(Collectors.toList());
+    }
+
+    public void addCategoryToExpenses(Long categoryId, List<Long> expensesIds) {
+        expensesIds.forEach(id -> {
+            Expense expense = findById(id);
+            if (expense != null) {
+                System.out.println(expense.getCategoriesIds().toString());
+                save(expense);
+            }
+        });
     }
 }

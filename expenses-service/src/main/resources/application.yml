@@ -7,6 +7,6 @@ spring:
     stream:
       bindings:
         categoryExpensesAdded-in-0:
-          destination: category-events
-        categoryExpensesRemoved-in-0:
-          destination: category-events
+          destination: categoryExpensesAdded-events
+#        categoryExpensesRemoved-in-0:
+#          destination: categoryExpensesRemoved-events
